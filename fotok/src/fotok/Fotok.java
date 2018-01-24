@@ -10,6 +10,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -35,6 +39,7 @@ import joptsimple.annot.JOHelp;
 public class Fotok extends AbstractHandler {
 	public static String qScripts="/public/QPage";
 	public static String fScripts="/public/js";
+	public static String fImages="/public/image";
 	public static Args clargs;
 	FolderHandler fh;
 	public static class Args
@@ -109,6 +114,15 @@ public class Fotok extends AbstractHandler {
 //			}
 //			return;
 //		}
+		ConsoleAppender console = new ConsoleAppender(); // create appender
+		// configure the appender
+		String PATTERN = "%d [%p|%c|%C{1}] %m%n";
+		console.setLayout(new PatternLayout(PATTERN));
+		console.setThreshold(Level.ALL);
+		console.activateOptions();
+		// add appender to any Logger (here is root)
+		Logger.getRootLogger().addAppender(console);
+
 		Args clargs = new Args();
 		AnnotatedClass cl = new AnnotatedClass();
 		cl.parseAnnotations(clargs);
@@ -139,6 +153,7 @@ public class Fotok extends AbstractHandler {
 		h.addHandler("/fotok/", new Fotok(clargs));
 		h.addHandler(qScripts, new QPageJSHandler());
 		h.addHandler(fScripts, new FotosJSHandler());
+		h.addHandler(fImages, new SvgHandler());
 		h.addHandler("/listing", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
 		h.addHandler("/public/login", new Login(clargs).createHandler());
 		h.addHandler("/public/access/", new PublicAccess(clargs, fotok));

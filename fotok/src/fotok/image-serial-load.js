@@ -10,22 +10,33 @@ class ImageSerialLoad
 		var img=document.getElementById(domId);
 		if(img)
 		{
-			img.addEventListener("load", this.loaded.bind(this), false);
 			if(this.nAvailableThread>0)
 			{
-				img.src=src;
-				this.nAvailableThread--;					
-				console.info("Load image: "+domId+" "+src);
+				this.startLoad(img, src);
 			}else
 			{
 				this.wait.push({img: img, src: src});
 			}
 		}
 	}
-	loaded()
+	startLoad(img, src)
 	{
-		console.info("Image loaded!");
+		img.addEventListener("load", this.loaded.bind(this), false);
+		if(img.nodeName=="image")
+		{
+			// image within SVG graphics
+			img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', src);
+		}else
+		{
+			img.src=src;
+		}
+		this.nAvailableThread--;					
+		console.info("Load image: "+img.id+" "+src+" "+this.nAvailableThread);
+	}
+	loaded(ev)
+	{
 		this.nAvailableThread++;
+		console.info("Image loaded! "+ev.target.id+" "+this.nAvailableThread);
 		this.startWaiting();
 	}
 	startWaiting()
@@ -36,9 +47,7 @@ class ImageSerialLoad
 			this.wait=this.wait.slice(1,this.wait.length);
 			var img=v.img;
 			var src=v.src;
-			img.src=src;
-			this.nAvailableThread--;					
-			console.info("Load image: "+img.id+" "+src);
+			this.startLoad(img, src);
 		}
 	}
 }

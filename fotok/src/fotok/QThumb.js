@@ -9,4 +9,8 @@ class QThumb extends QComponent
 		//var fd=this.page.createFormData(this);
 		// this.page.send(fd);
 	}
+	scrollIntoView()
+	{
+		this.dom.scrollIntoView();
+	}
 }

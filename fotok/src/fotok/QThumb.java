@@ -1,23 +1,22 @@
 package fotok;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.IInMemoryPost;
-import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QComponent;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QPage;
-import hu.qgears.quickjs.qpage.QTextEditor;
 
 public class QThumb extends QComponent {
 	public FotosFile f;
-	public QTextEditor name;
 	public QDiv l;
-	public QButton delete;
 	public String prevName;
 	public String nextName;
 	FotosFolder parent;
+	private List<ImageLoaderLauncher> imagesToLoad=new ArrayList<>(1);
 	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f) {
 		super(page, id);
 		this.f=f;
@@ -30,11 +29,16 @@ public class QThumb extends QComponent {
 		setWriter(parent.getWriter());
 		write("<div id=\"");
 		writeHtml(id);
-		write("\" style=\"width:320px; height:200px;\">\n");
+		write("\" style=\"width:100%; height:100%;\">\n");
 		if(FotosFile.isImage(f))
 		{
-			write("<img id=\"img-thumb-");
-			writeHtml(f.getName());
+			String id="img-thumb-"+f.getName();
+			String ref=f.getName()+"?size=thumb";
+			imagesToLoad.add(new ImageLoaderLauncher(id, ref));
+			write("<img id=\"");
+			writeHtml(id);
+			write("\" src=\"");
+			writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
 			write("\" class=\"thumb-img center\"></img>\n");
 		}else
 		{
@@ -43,7 +47,7 @@ public class QThumb extends QComponent {
 				write("\t\t\t<a href=\"");
 				writeHtml(f.getName());
 				write("/\" class=\"thumb-img\">\n");
-				new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true);
+				imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true));
 				write("\t\t\t</a>\n");
 			}else
 			{
@@ -59,11 +63,12 @@ public class QThumb extends QComponent {
 		setParent(page.getCurrentTemplate());
 		write("\tnew QThumb(page, \"");
 		writeObject(id);
-		write("\");\n\tglobalImageSerialLoad.loadImage(\"img-thumb-");
-		writeJSValue(f.getName());
-		write("\", \"");
-		writeJSValue(f.getName());
-		write("?thumb=1\");\n");
+		write("\");\n");
+		for(ImageLoaderLauncher ill: imagesToLoad)
+		{
+			ill.launch(this);
+		}
+		//	globalImageSerialLoad.loadImage("img-thumb-#JSf.getName()#", "#JSf.getName()#?thumb=1");
 		setParent(null);
 	}
 
@@ -71,5 +76,13 @@ public class QThumb extends QComponent {
 	public void handle(HtmlTemplate parent, IInMemoryPost post) throws IOException {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public void scrollIntoView() {
+		setParent(page.getCurrentTemplate());
+		write("\tpage.components[\"");
+		writeJSValue(id);
+		write("\"].scrollIntoView();\n");
+		setParent(null);
 	}
 }

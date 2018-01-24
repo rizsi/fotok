@@ -54,12 +54,15 @@ public class FotosFile {
 			File newFile=new File(f.getParentFile(), newName);
 			if(!newFile.exists())
 			{
-				File inCache=getCacheFile();
-				f.renameTo(newFile);
-				if(inCache.exists())
+				for(ESize size: ESize.values())
 				{
-					UtilFile.deleteRecursive(inCache);
+					File inCache=getCacheFile(size);
+					if(inCache.exists())
+					{
+						UtilFile.deleteRecursive(inCache);
+					}
 				}
+				f.renameTo(newFile);
 				return true;
 			}
 			return false;
@@ -79,40 +82,44 @@ public class FotosFile {
 			{
 				f.delete();
 			}
-			File inCache=getCacheFile();
-			if(inCache.exists())
+			for(ESize size: ESize.values())
 			{
-				UtilFile.deleteRecursive(inCache);
+				File inCache=getCacheFile(size);
+				if(inCache.exists())
+				{
+					UtilFile.deleteRecursive(inCache);
+				}
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	public File getCacheFile() {
-		Path np=new Path(p);
-		if(np.folder)
+	/**
+	 * TODO delete resized cached images!
+	 * @param size
+	 * @return
+	 */
+	public File getCacheFile(ESize size) {
+		Path p=getCacheFilePath(size);
+		if(p==null)
 		{
-//			return null;
-		}else
-		{
-//			String last=np.pieces.remove(np.pieces.size()-1);
-//			np.pieces.add(last+"-thumb.jpg");
+			return null;
 		}
-		return new File(storage.cache, np.toStringPath());
+		return new File(storage.cache, p.toStringPath());
 	}
-	public String getCacheFileName() {
-		Path np=new Path(p);
-		if(np.folder)
+	public Path getCacheFilePath(ESize size) {
+		if(size==null)
 		{
-//			np.pieces.add("thumb.jpg");
-//			np.folder=false;
-		}else
-		{
-//			String last=np.pieces.remove(np.pieces.size()-1);
-//			np.pieces.add(last+"-thumb.jpg");
+			return null;
 		}
-		return "/"+np.toStringPath();
+		Path np=new Path(p);
+		if(!p.folder)
+		{
+			String name=size+"-"+np.pieces.get(np.pieces.size()-1);
+			np.pieces.set(np.pieces.size()-1, name);
+		}
+		return np;
 	}
 	public static boolean isImage(File f) {
 		String name=f.getName();

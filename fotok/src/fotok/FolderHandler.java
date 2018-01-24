@@ -71,9 +71,20 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 				}
 			}else
 			{
-				if(baseRequest.getParameter("thumb")!=null)
+				if("all".equals(baseRequest.getParameter("download")))
 				{
-					String path=thumbsHandler.createThumb(ff);
+					System.out.println("Download all!");
+					new FolderAsZipHandler(ff.folder.getFile()).handle(target, baseRequest, request, response);
+					return;
+				}
+				ESize size=null;
+				try {
+					size=ESize.valueOf(baseRequest.getParameter("size"));
+				} catch (Exception e) {
+				}
+				String path=thumbsHandler.createThumb(ff.file, size);
+				if(path!=null)
+				{
 					baseRequest.setPathInfo(path);
 					thumbsHandler.handle(path, baseRequest, request, response);
 				}else
@@ -91,7 +102,13 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	@Override
 	public AbstractQPage createPage(Object request) throws Exception {
 		ResolvedQuery ff=(ResolvedQuery) request;
-		return new FolderViewPage(ff.mode, ff.folder, delegate);
+		if(ff.mode==Mode.rw)
+		{
+			return new FolderViewPageRW(ff.mode, ff.folder, delegate);
+		}else
+		{
+			return new FolderViewPageReadOnly(ff.mode, ff.folder);
+		}
 	}
 
 }
