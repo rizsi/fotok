@@ -70,7 +70,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					setupThumbEditObjects(f, t);
 					t.l=new QDiv(page, "div-"+f.getPrefixedName());
 					t.addChild(t.l);
-					QButton view=new QButton(page, "view-"+f.getName());
 					new DomCreator() {
 						@Override
 						public void generateDom() {
@@ -96,8 +95,12 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 						}
 					}.initialize(page, "content");
 					thumbs.put(f.getName(), t);
-					t.addChild(view);
-					view.clicked.addListener(ev->view(t));
+					if(FotosFile.isImage(f))
+					{
+						QButton view=new QButton(page, "view-"+f.getName());
+						t.addChild(view);
+						view.clicked.addListener(ev->view(t));
+					}
 				}
 				prevObject=exists;
 				exists.prevName=prevName;

@@ -21,7 +21,6 @@ public class QThumb extends QComponent {
 		super(page, id);
 		this.f=f;
 		this.parent=parent;
-		// initialize(null);
 	}
 	
 	@Override
@@ -51,7 +50,16 @@ public class QThumb extends QComponent {
 				write("\t\t\t</a>\n");
 			}else
 			{
-				//<img src="#Hf.getName()#?thumb=1" class="thumb-img center"></img>
+				String id="img-unknown-thumb-"+f.getName();
+				write("<a href=\"");
+				writeHtml(f.getName());
+				write("\" download=\"");
+				writeHtml(f.getName());
+				write("\" class=\"thumb-img\">\n\t<img id=\"");
+				writeHtml(id);
+				write("\" src=\"");
+				writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
+				write("\" class=\"thumb-img center\"></img>\n</a>\n");
 			}
 		}
 		write("\t</div>\n");
