@@ -30,7 +30,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		page.setScriptsAsSeparateFile(Fotok.clargs.contextPath+Fotok.qScripts);
 		installEditModeButtons(page);
 		page.submitToUI(new Runnable() {
-			
 			@Override
 			public void run() {
 				refresh();

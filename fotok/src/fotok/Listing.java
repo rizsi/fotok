@@ -1,8 +1,10 @@
 package fotok;
 
+import java.io.File;
 import java.util.List;
 
 import fotok.Fotok.Args;
+import hu.qgears.commons.UtilFile;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
 
@@ -32,6 +34,16 @@ public class Listing extends AbstractQPage {
 				writeHtml(Fotok.clargs.contextPath+p);
 				write("\">");
 				writeHtml(p);
+				write("</a><br/>\n");
+			}
+		}else if(Fotok.clargs.demoAllPublic)
+		{
+			for(File f: UtilFile.listFiles(Fotok.clargs.images))
+			{
+				write("<a href=\"");
+				writeHtml(Fotok.clargs.contextPath+"/fotok/"+f.getName()+(f.isDirectory()?"/":""));
+				write("\">");
+				writeHtml(f.getName());
 				write("</a><br/>\n");
 			}
 		}

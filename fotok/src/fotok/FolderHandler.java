@@ -42,7 +42,15 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		thumbsHandler.setDirectoriesListed(true);
 		thumbsHandler.setMinAsyncContentLength(Integer.MAX_VALUE);
 		thumbsHandler.setMinMemoryMappedContentLength(Integer.MAX_VALUE);
-		
+
+		try {
+			filesHandler.start();
+			thumbsHandler.start();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		this.storage=storage;
 	}
 

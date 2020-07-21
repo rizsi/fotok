@@ -113,18 +113,6 @@ public class Authenticator extends AbstractHandler {
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-//		if(Fotok.clargs.redirectServerName!=null)
-//		{
-//			baseRequest.setServerName(Fotok.clargs.redirectServerName);
-//		}
-//		if(Fotok.clargs.redirectServerPort!=null)
-//		{
-//			baseRequest.setServerPort(Fotok.clargs.redirectServerPort);
-//		}
-		if(Fotok.clargs.redirectServerScheme!=null)
-		{
-			baseRequest.setScheme(Fotok.clargs.redirectServerScheme);	
-		}
 		List<String> pieces=UtilString.split(target, "/");
 		User user=User.get(HttpSessionQPageManager.getManager(baseRequest.getSession()));
 		System.out.println("Query: "+System.currentTimeMillis()+" "+target);

@@ -56,21 +56,10 @@ public class Fotok extends AbstractHandler {
 		public File thumbsFolder=null;
 		@JOHelp("Folder containing the public access redirects. Read and written by the program.")
 		public File publicAccessFolder=null;
-		@JOHelp("Must contain these files: 'apikey': Google API key. 'clientid': Client Id 'clientid.secret': Client secret")
-		public File googleAuthData;
 		@JOHelp("The logins configuration file. See code for documentation :-). File is periodically re-read automatically by the program. So configuration can be modified on the fly.")
 		public File loginsConf;
 		@JOHelp("The number of executors executing thumbnail creation. Actual thumbnailing is done by command line tool 'convert' but this number restricts the number of parallel running convert programs.")
 		public int nThumbnailThread=2;
-		
-		// TODO Use X-Forwarded-Proto X-Forwarded-Context X-Forwarded-Server X-Forwarded-Port headers instead.
-		
-		@JOHelp("Server name. Redirect is done to this server. Useful when Jetty is behind Apache2 https proxy. Example: rizsi.com")
-		public String redirectServerName;
-		@JOHelp("Server scheme. Redirect is done to this scheme. Useful when Jetty is behind Apache2 https proxy. Example: https")
-		public String redirectServerScheme;
-		@JOHelp("Server port. Redirect is done to this port. Useful when Jetty is behind Apache2 https proxy. Example: 443")
-		public Integer redirectServerPort;
 		@JOSimpleBoolean
 		@JOHelp("Debug and demo only feature. All pages are publicly accessibly no login required.")
 		public boolean demoAllPublic;
@@ -153,7 +142,6 @@ public class Fotok extends AbstractHandler {
 		h.addHandler(fScripts, new FotosJSHandler());
 		h.addHandler(fImages, new SvgHandler());
 		h.addHandler("/listing", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
-		h.addHandler("/public/login", new Login(clargs).createHandler());
 		h.addHandler("/public/access/", new PublicAccess(clargs, fotok));
 		h.addHandler("/debug", new DebugHttpPage().createHandler());
 		clargs.auth=new Authenticator(h, clargs);
