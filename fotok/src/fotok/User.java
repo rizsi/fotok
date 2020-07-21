@@ -71,7 +71,13 @@ public class User {
 		return (User) qPageManager.getUserData("user");
 	}
 	public void setGroups(String groups) {
-		this.groups = new TreeSet<>(UtilString.split(groups, " "));
+		if(groups==null)
+		{
+			this.groups=new TreeSet<>();
+		}else
+		{
+			this.groups = new TreeSet<>(UtilString.split(groups, " "));
+		}
 	}
 	public String getGroupsAsString() {
 		return UtilString.concat(groups, " ");

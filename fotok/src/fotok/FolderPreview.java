@@ -20,11 +20,11 @@ public class FolderPreview extends HtmlTemplate{
 		super(out);
 	}
 
-	public List<ImageLoaderLauncher> generatePreview(FotosFolder home, FotosFolder ff, boolean thumbs)
+	public List<ImageLoaderLauncher> generatePreview(FotosFolder home, FotosFolder ff, boolean thumbs, String contextPath)
 	{
 		List<ImageLoaderLauncher> ret=new ArrayList<>(6);
 		write("<svg width=\"100%\" height=\"100%\">\n  Sorry, your browser does not support inline SVG.\n  <image xlink:href=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/folder.svg");
+		writeHtml(contextPath+Fotok.fImages+"/folder.svg");
 		write("\" x=\"0%\" y=\"0%\" height=\"100%\" width=\"100%\"/>\n");
 		int n=0;
 		for(FotosFile c:ff.iterateFolderSubFotos())
@@ -51,7 +51,7 @@ public class FolderPreview extends HtmlTemplate{
 				write("%\" fill=\"black\"/>  \n<image id=\"");
 				writeHtml(imageId);
 				write("\" xlink:href=\"");
-				writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
+				writeHtml(contextPath+Fotok.fImages+"/Image-missing.svg");
 				write("\" x=\"");
 				writeObject(x);
 				write("%\" y=\"");

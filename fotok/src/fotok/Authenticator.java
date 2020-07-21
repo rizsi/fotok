@@ -21,6 +21,7 @@ import hu.qgears.commons.UtilFile;
 import hu.qgears.commons.UtilString;
 import hu.qgears.quickjs.qpage.QPageManager;
 import hu.qgears.quickjs.utils.HttpSessionQPageManager;
+import hu.qgears.quickjs.utils.UtilHttpContext;
 
 public class Authenticator extends AbstractHandler {
 	AbstractHandler delegate;
@@ -118,21 +119,25 @@ public class Authenticator extends AbstractHandler {
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-		authenticateUser(baseRequest);
+		User user=authenticateUser(baseRequest);
 		List<String> pieces=UtilString.split(target, "/");
-		User user=User.get(HttpSessionQPageManager.getManager(baseRequest.getSession()));
-		System.out.println("Query: "+System.currentTimeMillis()+" "+target);
+		log.info("Query: "+System.currentTimeMillis()+" "+target);
 		if(pieces.size()>0&&(pieces.get(0).equals("public")))
 		{
 			delegate.handle(target, baseRequest, request, response);
 		}else
 		{
-			if(user==null&&!clargs.demoAllPublic)
+			if((user==null||"anon".equals(user.getEmail()))&&!clargs.demoAllPublic)
 			{
-				response.sendRedirect(Fotok.clargs.contextPath+"/public/login/");
+				response.sendRedirect(UtilHttpContext.getServerUrl(baseRequest)+Fotok.clargs.loginPath+"?url="+UtilHttpContext.getRootURL(baseRequest)+target);
 				baseRequest.setHandled(true);
 			}else
 			{
+				if(pieces.size()==0)
+				{
+					// Root folder - accessible to all
+					delegate.handle(target, baseRequest, request, response);
+				}
 				Mode mode;
 				if(clargs.demoAllPublic)
 				{
@@ -143,7 +148,7 @@ public class Authenticator extends AbstractHandler {
 				}
 				if(mode==null)
 				{
-					response.sendRedirect(Fotok.clargs.contextPath+"/listing/");
+					UtilHttpContext.sendRedirect(baseRequest, response, "/"); 
 					baseRequest.setHandled(true);
 				}else
 				{
@@ -153,26 +158,24 @@ public class Authenticator extends AbstractHandler {
 			}
 		}
 	}
-	private void authenticateUser(Request baseRequest) {
+	private User authenticateUser(Request baseRequest) {
+		String username=validateSingleAndGet(baseRequest, "X-User");
+		String groups=validateSingleAndGet(baseRequest, "X-Groups");
+//		System.out.println("username: "+username+" "+groups);
+		QPageManager qPageManager=HttpSessionQPageManager.getManager(baseRequest.getSession());
+		User user=User.get(qPageManager);
+		if((user==null && username!=null) || (user!=null&& !user.getEmail().equals(username)))
 		{
-			String username=validateSingleAndGet(baseRequest, "X-User");
-			String groups=validateSingleAndGet(baseRequest, "X-Groups");
-//			System.out.println("username: "+username+" "+groups);
-			// List<String> groupsList=UtilString.split(groups, " ");
-			QPageManager qPageManager=HttpSessionQPageManager.getManager(baseRequest.getSession());
-			User user=User.get(qPageManager);
-			if((user==null && username!=null) || (user!=null&& !user.getEmail().equals(username)))
-			{
-				user=new User(username, username, "", "", "", username, "", "");
-				User.set(qPageManager, user);
-				user.setGroups(groups);
-				log.info("Session user set: "+user);
-			}
-			if(user!=null)
-			{
-				user.setGroups(groups);
-			}
+			user=new User(username, username, "", "", "", username, "", "");
+			User.set(qPageManager, user);
+			user.setGroups(groups);
+			log.info("Session user set: "+user);
 		}
+		if(user!=null)
+		{
+			user.setGroups(groups);
+		}
+		return user;
 	}
 
 	private String validateSingleAndGet(Request baseRequest, String string) {
@@ -182,7 +185,8 @@ public class Authenticator extends AbstractHandler {
 			String ret=usernames.nextElement();
 			if(usernames.hasMoreElements())
 			{
-				throw new IllegalArgumentException("Multiple "+string+" headers are not allowed");
+				String next=usernames.nextElement();
+				throw new IllegalArgumentException("Multiple "+string+" headers are not allowed "+ret+" "+next);
 			}
 			return ret;
 		}

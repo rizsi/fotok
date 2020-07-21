@@ -105,7 +105,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 			String p=folder.storage.args.getPublicAccessManager().getShare(folder);
 			if(p!=null)
 			{
-				shares.innerhtml.setPropertyFromServer("<a href='"+folder.storage.args.contextPath+"/public/access/"+p+"/'>"+folder.storage.args.contextPath+"/public/access/"+p+"/</a>");
+				shares.innerhtml.setPropertyFromServer("<a href='"+contextPath+"/public/access/"+p+"/'>"+contextPath+"/public/access/"+p+"/</a>");
 			}else
 			{
 				shares.innerhtml.setPropertyFromServer("");
@@ -216,16 +216,16 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	@Override
 	protected void additionalHeaders() {
 		write("<script type=\"text/javascript\" src=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fScripts);
+		writeHtml(contextPath+Fotok.fScripts);
 		write("/upload.js\"></script>\n<script type=\"text/javascript\" src=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fScripts);
+		writeHtml(contextPath+Fotok.fScripts);
 		write("/multiupload.js\"></script>\n<style>\n.dropping {\n  border: 5px solid blue;\n  width:  200px;\n  height: 100px;\n}\n</style>\n");
 	}
 	
 	@Override
 	protected void generateUploadInitializer() {
 		write("\tvar upl=new MultiUpload(document.getElementById(\"uploadProgress\"), ");
-		writeObject(delegate.getMaxChunkSize());
+		writeObject(Fotok.clargs.getMaxChunkSize());
 		write(");\n\tupl.installDrop(document.body);\n\tupl.installFileInput(document.getElementById(\"file_input\"));\n\tupl.onFileFinished=function(){globalQPage.components[\"refresh\"].onclick();};\n");
 	}
 	

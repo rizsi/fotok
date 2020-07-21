@@ -44,14 +44,12 @@ public class Fotok extends AbstractHandler {
 	FolderHandler fh;
 	public static class Args
 	{
-		@JOHelp("This is the root folder of the application when absolute path is necessary to write into the generated HTML. Useful when Jetty is behind Apache2 https proxy. Example: '/fotok'")
-		public String contextPath="";
 		@JOHelp("Jetty http server host to bind to.")
 		public String host="127.0.0.1";
 		@JOHelp("Folder containing the images.")
 		public File images;
 		@JOHelp("Jetty http server port")
-		public int port=8888;
+		public int port=9093;
 		@JOHelp("Folder containing the thumbnails. Only redundant data is stored here. Re-generated on demand.")
 		public File thumbsFolder=null;
 		@JOHelp("Folder containing the public access redirects. Read and written by the program.")
@@ -63,7 +61,8 @@ public class Fotok extends AbstractHandler {
 		@JOSimpleBoolean
 		@JOHelp("Debug and demo only feature. All pages are publicly accessibly no login required.")
 		public boolean demoAllPublic;
-
+		@JOHelp("In case of access to not authorized resource Query is redirected to this path.")
+		public String loginPath="/login/";
 		private Authenticator auth;
 		private PublicAccessManager publicAccessManager;
 		public Authenticator getAuth() {
@@ -87,6 +86,10 @@ public class Fotok extends AbstractHandler {
 				}
 			}
 			return thumbingExecutor;
+		}
+		public int getMaxChunkSize() {
+			// Safe max chunk size
+			return 100000;
 		}
 	}
 
@@ -134,14 +137,14 @@ public class Fotok extends AbstractHandler {
 		sessions.addEventListener(HttpSessionQPageManager.createSessionListener());
 		context.setHandler(sessions);
 
-		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null));
+		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null, null));
 		DispatchHandler h=new DispatchHandler();
 		Fotok fotok=new Fotok(clargs);
 		h.addHandler("/fotok/", new Fotok(clargs));
 		h.addHandler(qScripts, new QPageJSHandler());
 		h.addHandler(fScripts, new FotosJSHandler());
 		h.addHandler(fImages, new SvgHandler());
-		h.addHandler("/listing", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
+		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
 		h.addHandler("/public/access/", new PublicAccess(clargs, fotok));
 		h.addHandler("/debug", new DebugHttpPage().createHandler());
 		clargs.auth=new Authenticator(h, clargs);

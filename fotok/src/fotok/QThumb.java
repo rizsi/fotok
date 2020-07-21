@@ -21,9 +21,11 @@ public class QThumb extends QComponent {
 	private String thumbId;
 	LabelsGenerator labelsGenerator;
 	ERotation rot=ERotation.rotation0;
+	String contextPath;
 	private List<ImageLoaderLauncher> imagesToLoad=new ArrayList<>(1);
-	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f, LabelsGenerator labelsGenerator) {
+	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f, LabelsGenerator labelsGenerator, String contextPath) {
 		super(page, id);
+		this.contextPath=contextPath;
 		this.f=f;
 		this.parent=parent;
 		this.labelsGenerator=labelsGenerator;
@@ -50,7 +52,7 @@ public class QThumb extends QComponent {
 				write("<img id=\"");
 				writeHtml(thumbId);
 				write("\" src=\"");
-				writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
+				writeHtml(contextPath+Fotok.fImages+"/Image-missing.svg");
 				write("\" class=\"thumb-img center ");
 				writeObject(rot.getJSClass());
 				write("\"></img>\n");
@@ -61,7 +63,7 @@ public class QThumb extends QComponent {
 					write("\t\t\t<a href=\"");
 					writeHtml(f.getName());
 					write("/\" class=\"thumb-img\">\n");
-					imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true));
+					imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true, contextPath));
 					write("\t\t\t</a>\n");
 				}else if(FotosFile.isVideo(f))
 				{
@@ -81,7 +83,7 @@ public class QThumb extends QComponent {
 					write("\" class=\"thumb-img\">\n\t<img id=\"");
 					writeHtml(id);
 					write("\" src=\"");
-					writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
+					writeHtml(contextPath+Fotok.fImages+"/Image-missing.svg");
 					write("\" class=\"thumb-img center\"></img>\n</a>\n");
 				}
 			}

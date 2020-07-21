@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.server.Request;
+
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
@@ -14,12 +18,14 @@ import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
+import hu.qgears.quickjs.utils.UtilHttpContext;
 
 abstract public class AbstractFolderViewPage extends AbstractQPage {
 	protected FotosFolder folder;
 	protected Map<String, QThumb>thumbs=new TreeMap<>();
 	protected Mode mode;
 	protected String selectedSize="normal";
+	protected String contextPath;
 	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder) {
 		this.mode=mode;
 		this.folder=uploadFolder;
@@ -27,7 +33,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 	@Override
 	final protected void initQPage(QPage page) {
-		page.setScriptsAsSeparateFile(Fotok.clargs.contextPath+Fotok.qScripts);
+		page.setScriptsAsSeparateFile(contextPath+Fotok.qScripts);
 		installEditModeButtons(page);
 		page.submitToUI(new Runnable() {
 			@Override
@@ -36,6 +42,11 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				updateShares();
 			}
 		});
+	}
+	@Override
+	public void setRequest(Request baseRequest, HttpServletRequest request) {
+		super.setRequest(baseRequest, request);
+		contextPath=UtilHttpContext.getContext(baseRequest);
 	}
 	abstract protected void installEditModeButtons(QPage page);
 
@@ -71,7 +82,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 							}
 						}
 					};
-					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg);
+					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg, contextPath);
 					exists=t;
 					setupThumbEditObjects(f, t);
 					new DomCreator() {
@@ -180,7 +191,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					write("\" style=\"width:100%; height:100%\">\n");
 					if(f.isFolder())
 					{
-						subImages.addAll(new FolderPreview(this).generatePreview(folder, (FotosFolder)f, false));
+						subImages.addAll(new FolderPreview(this).generatePreview(folder, (FotosFolder)f, false, contextPath));
 					}else if(FotosFile.isImage(f))
 					{
 						write("\t<img ");
@@ -255,11 +266,11 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		write("<title>");
 		writeHtml(getTitle());
 		write("</title>\n<script type=\"text/javascript\" src=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fScripts);
+		writeHtml(contextPath+Fotok.fScripts);
 		write("/ArrayView.js\"></script>\n<script type=\"text/javascript\" src=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fScripts);
+		writeHtml(contextPath+Fotok.fScripts);
 		write("/img-resize.js\"></script>\n<script type=\"text/javascript\" src=\"");
-		writeHtml(Fotok.clargs.contextPath+Fotok.fScripts);
+		writeHtml(contextPath+Fotok.fScripts);
 		write("/image-serial-load.js\"></script>\n");
 		additionalHeaders();
 		write("<script type=\"text/javascript\">\nglobalImageSerialLoad=new ImageSerialLoad(");
@@ -284,7 +295,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		if(user!=null)
 		{
 			write("<a href=\"");
-			writeHtml(Fotok.clargs.contextPath);
+			writeHtml(contextPath);
 			write("/public/login/logout\">logout ");
 			writeHtml(user.getEmail());
 			write("</a><br/>\n");
