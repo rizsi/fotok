@@ -1,6 +1,13 @@
 package fotok;
 
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.eclipse.jetty.server.Request;
+
+import hu.qgears.commons.UtilString;
 import hu.qgears.quickjs.qpage.QPageManager;
+import hu.qgears.quickjs.utils.HttpSessionQPageManager;
 
 public class User {
 	private String id;
@@ -11,6 +18,7 @@ public class User {
 	private String email;
 	private String token;
 	private String locale;
+	private Set<String> groups=new TreeSet<>();
 	public User(String id, String name, String givenName, String familyName, String imageUrl, String email,
 			String token, String locale) {
 		super();
@@ -25,7 +33,7 @@ public class User {
 	}
 	@Override
 	public String toString() {
-		return "'"+id+"' '"+name+"' '"+email+"' '"+locale+"'";
+		return "'"+id+"' '"+name+"' '"+email+"' '"+locale+"' "+getGroupsAsString();
 	}
 	public String getId() {
 		return id;
@@ -54,8 +62,22 @@ public class User {
 	public static void set(QPageManager qPageManager, User user) {
 		 qPageManager.setUserData("user", user);
 	}
+	public static User get(Request request)
+	{
+		return get(HttpSessionQPageManager.getManager(request.getSession()));
+	}
 	public static User get(QPageManager qPageManager)
 	{
 		return (User) qPageManager.getUserData("user");
+	}
+	public void setGroups(String groups) {
+		this.groups = new TreeSet<>(UtilString.split(groups, " "));
+	}
+	public String getGroupsAsString() {
+		return UtilString.concat(groups, " ");
+	}
+	public boolean hasRole(String name)
+	{
+		return groups.contains(name);
 	}
 }

@@ -1,4 +1,10 @@
+ == How to install
 
+Must be installed a proxy which does authentication and ssl.
+
+Required hearders:
+
+ * "X-User" user identifier
+ * "X-Groups" groups of the user, space separated list
 // TODO Use X-Forwarded-Proto X-Forwarded-Context X-Forwarded-Server X-Forwarded-Port headers instead.
 
-		

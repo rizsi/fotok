@@ -2,6 +2,7 @@ package fotok;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -12,16 +13,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import fotok.Fotok.Args;
 import hu.qgears.commons.UtilFile;
 import hu.qgears.commons.UtilString;
+import hu.qgears.quickjs.qpage.QPageManager;
 import hu.qgears.quickjs.utils.HttpSessionQPageManager;
 
 public class Authenticator extends AbstractHandler {
 	AbstractHandler delegate;
 	Args clargs;
 	String prevContent;
+	Logger log=LoggerFactory.getLogger(getClass());
 	enum Mode
 	{
 		ro,
@@ -113,6 +118,7 @@ public class Authenticator extends AbstractHandler {
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
+		authenticateUser(baseRequest);
 		List<String> pieces=UtilString.split(target, "/");
 		User user=User.get(HttpSessionQPageManager.getManager(baseRequest.getSession()));
 		System.out.println("Query: "+System.currentTimeMillis()+" "+target);
@@ -147,6 +153,42 @@ public class Authenticator extends AbstractHandler {
 			}
 		}
 	}
+	private void authenticateUser(Request baseRequest) {
+		{
+			String username=validateSingleAndGet(baseRequest, "X-User");
+			String groups=validateSingleAndGet(baseRequest, "X-Groups");
+//			System.out.println("username: "+username+" "+groups);
+			// List<String> groupsList=UtilString.split(groups, " ");
+			QPageManager qPageManager=HttpSessionQPageManager.getManager(baseRequest.getSession());
+			User user=User.get(qPageManager);
+			if((user==null && username!=null) || (user!=null&& !user.getEmail().equals(username)))
+			{
+				user=new User(username, username, "", "", "", username, "", "");
+				User.set(qPageManager, user);
+				user.setGroups(groups);
+				log.info("Session user set: "+user);
+			}
+			if(user!=null)
+			{
+				user.setGroups(groups);
+			}
+		}
+	}
+
+	private String validateSingleAndGet(Request baseRequest, String string) {
+		Enumeration<String> usernames=baseRequest.getHeaders(string);
+		if(usernames.hasMoreElements())
+		{
+			String ret=usernames.nextElement();
+			if(usernames.hasMoreElements())
+			{
+				throw new IllegalArgumentException("Multiple "+string+" headers are not allowed");
+			}
+			return ret;
+		}
+		return null;
+	}
+
 	public static void setAccessMode(Request req, Mode mode)
 	{
 		req.setAttribute("accessMode", mode);
