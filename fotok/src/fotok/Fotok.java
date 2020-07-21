@@ -3,6 +3,7 @@ package fotok;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -10,17 +11,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
+
+import com.jspa.logging.Log4Init;
 
 import hu.qgears.commons.NamedThreadFactory;
 import hu.qgears.quickjs.qpage.QPageTypesRegistry;
@@ -31,6 +30,7 @@ import hu.qgears.quickjs.utils.QPageHandlerToJetty;
 import hu.qgears.quickjs.utils.QPageJSHandler;
 import joptsimple.annot.AnnotatedClass;
 import joptsimple.annot.JOHelp;
+import joptsimple.annot.JOSimpleBoolean;
 
 /**
  * Executable main class that opens a Jetty web server and handles QPage based
@@ -62,12 +62,18 @@ public class Fotok extends AbstractHandler {
 		public File loginsConf;
 		@JOHelp("The number of executors executing thumbnail creation. Actual thumbnailing is done by command line tool 'convert' but this number restricts the number of parallel running convert programs.")
 		public int nThumbnailThread=2;
+		
+		// TODO Use X-Forwarded-Proto X-Forwarded-Context X-Forwarded-Server X-Forwarded-Port headers instead.
+		
 		@JOHelp("Server name. Redirect is done to this server. Useful when Jetty is behind Apache2 https proxy. Example: rizsi.com")
 		public String redirectServerName;
 		@JOHelp("Server scheme. Redirect is done to this scheme. Useful when Jetty is behind Apache2 https proxy. Example: https")
 		public String redirectServerScheme;
 		@JOHelp("Server port. Redirect is done to this port. Useful when Jetty is behind Apache2 https proxy. Example: 443")
 		public Integer redirectServerPort;
+		@JOSimpleBoolean
+		@JOHelp("Debug and demo only feature. All pages are publicly accessibly no login required.")
+		public boolean demoAllPublic;
 
 		private Authenticator auth;
 		private PublicAccessManager publicAccessManager;
@@ -102,27 +108,6 @@ public class Fotok extends AbstractHandler {
 	}
 
 	public static void main(String[] args) throws Exception {
-//		if(true)
-//		{
-//			for(Object key:	System.getProperties().keySet())
-//			{
-//				System.out.println(""+key+": "+System.getProperties().getProperty(""+key));
-//			}
-//			for(File f:	UtilFile.listFiles(new File(".")))
-//			{
-//				System.out.write((f.getName()+"\n").getBytes(StandardCharsets.UTF_8));
-//			}
-//			return;
-//		}
-		ConsoleAppender console = new ConsoleAppender(); // create appender
-		// configure the appender
-		String PATTERN = "%d [%p|%c|%C{1}] %m%n";
-		console.setLayout(new PatternLayout(PATTERN));
-		console.setThreshold(Level.ALL);
-		console.activateOptions();
-		// add appender to any Logger (here is root)
-		Logger.getRootLogger().addAppender(console);
-
 		Args clargs = new Args();
 		AnnotatedClass cl = new AnnotatedClass();
 		cl.parseAnnotations(clargs);
@@ -130,24 +115,37 @@ public class Fotok extends AbstractHandler {
 		cl.printHelpOn(System.out);
 		cl.parseArgs(args);
 		cl.print();
+		new Fotok(clargs).run();
+	}
+	private void run() throws Exception
+	{
+		Log4Init.init();
 		
 		InetSocketAddress sa = new InetSocketAddress(clargs.host, clargs.port);
 		Server server = new Server(sa);
-
+		
 		// Specify the Session ID Manager
-		HashSessionIdManager idmanager = new HashSessionIdManager();
+		DefaultSessionIdManager idmanager = new DefaultSessionIdManager(server, new SecureRandom());
 		server.setSessionIdManager(idmanager);
 
 		// Sessions are bound to a context.
 		ContextHandler context = new ContextHandler("/");
 		server.setHandler(context);
 
+		context.setAttribute(Fotok.class.getName(), this);
 		// Create the SessionHandler (wrapper) to handle the sessions
-		HashSessionManager manager = new HashSessionManager();
-		SessionHandler sessions = new SessionHandler(manager);
+		SessionHandler sessions = new SessionHandler();
+		sessions.setSessionCookie("com.rizsi.fotok.Fotok");
+		sessions.setSameSite(SameSite.STRICT);
+		sessions.getSessionCookieConfig().setSecure(false);
+		sessions.getSessionCookieConfig().setPath("/");
+		System.out.println("Default max age: "+sessions.getSessionCookieConfig().getMaxAge());;
+		sessions.getSessionCookieConfig().setMaxAge(60*60*24);
+		// sessions.setRefreshCookieAge(ageInSeconds);MaxInactiveInterval(seconds);CheckingRemoteSessionIdEncoding(remote);
 		sessions.addEventListener(HttpSessionQPageManager.createSessionListener());
 		context.setHandler(sessions);
-		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null));
+
+		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null));
 		DispatchHandler h=new DispatchHandler();
 		Fotok fotok=new Fotok(clargs);
 		h.addHandler("/fotok/", new Fotok(clargs));
@@ -157,6 +155,7 @@ public class Fotok extends AbstractHandler {
 		h.addHandler("/listing", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
 		h.addHandler("/public/login", new Login(clargs).createHandler());
 		h.addHandler("/public/access/", new PublicAccess(clargs, fotok));
+		h.addHandler("/debug", new DebugHttpPage().createHandler());
 		clargs.auth=new Authenticator(h, clargs);
 		sessions.setHandler(clargs.auth);
 		server.start();

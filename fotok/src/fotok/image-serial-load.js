@@ -31,12 +31,12 @@ class ImageSerialLoad
 			img.src=src;
 		}
 		this.nAvailableThread--;					
-		console.info("Load image: "+img.id+" "+src+" "+this.nAvailableThread);
+		// console.info("Load image: "+img.id+" "+src+" "+this.nAvailableThread);
 	}
 	loaded(ev)
 	{
 		this.nAvailableThread++;
-		console.info("Image loaded! "+ev.target.id+" "+this.nAvailableThread);
+		// console.info("Image loaded! "+ev.target.id+" "+this.nAvailableThread);
 		this.startWaiting();
 	}
 	startWaiting()

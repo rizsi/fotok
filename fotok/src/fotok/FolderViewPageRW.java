@@ -3,6 +3,7 @@ package fotok;
 import java.io.IOException;
 
 import fotok.Authenticator.Mode;
+import hu.qgears.commons.UtilEventListener;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QLabel;
@@ -25,6 +26,14 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 
 	@Override
 	protected void installEditModeButtons(QPage page) {
+		QButton refresh=new QButton(page, "refresh");
+		refresh.clicked.addListener(new UtilEventListener<QButton>() {
+			
+			@Override
+			public void eventHappened(QButton msg) {
+				refresh();
+			}
+		});
 		QButton newFolder=new QButton(page, "newFolder");
 		newFolder.clicked.addListener(x->newFolder());
 		QButton share=new QButton(page, "share");
@@ -41,7 +50,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		{
 			public void run() {
 				int n=0;
-				for(FotosFile f: folder.iterateFolderSubFotos())
+				for(@SuppressWarnings("unused") FotosFile f: folder.iterateFolderSubFotos())
 				{
 					n++;
 				}
@@ -175,6 +184,12 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		write("\" size=\"25\"></input><button id=\"delete-");
 		writeHtml(f.getName());
 		write("\">delete</button>\n");
+		if(FotosFile.isImage(f))
+		{
+			write("\t<button id=\"rotate-");
+			writeHtml(f.getName());
+			write("\">rotate</button>\n");
+		}
 	}
 	@Override
 	protected void setupThumbEditObjects(FotosFile f, QThumb t) {
@@ -183,8 +198,19 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		QButton delete=new QButton(page, "delete-"+f.getName());
 		t.addChild(delete);
 		delete.clicked.addListener(ev->deleteElement(t));
+		if(FotosFile.isImage(f))
+		{
+			QButton rotate=new QButton(page, "rotate-"+f.getName());
+			t.addChild(rotate);
+			rotate.clicked.addListener(ev->rotate(t));
+		}
 		name.enterPressed.addListener(newName->rename(t,name, newName));
 		t.addChild(name);
+	}
+
+	private Object rotate(QThumb t) {
+		t.f.setRotate(t.rotate());
+		return null;
 	}
 
 	@Override
@@ -205,6 +231,6 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	
 	@Override
 	protected void generateBodyPartsEdit() {
-		write("<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n");
+		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n");
 	}
 }

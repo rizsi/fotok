@@ -57,6 +57,16 @@ class ArrayView2
 				domHolder.style.height=this.height+"px";
 				domHolder.style.left=(this.index%this.columns)*this.width+"px";
 				domHolder.style.top=Math.floor(this.index/this.columns)*this.height+"px";
+				if(domHolder.ArrayViewResizedListener)
+				{
+					try
+					{
+						domHolder.ArrayViewResizedListener(this, this.width, this.height);
+					} catch(ex)
+					{
+						console.error(ex);
+					}
+				}
 				this.index++;
 			}
 		}

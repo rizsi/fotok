@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import fotok.Authenticator.Mode;
-import hu.qgears.commons.UtilEventListener;
+import fotok.QThumb.LabelsGenerator;
+import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QPage;
@@ -27,14 +28,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	@Override
 	final protected void initQPage(QPage page) {
 		page.setScriptsAsSeparateFile(Fotok.clargs.contextPath+Fotok.qScripts);
-		QButton refresh=new QButton(page, "refresh");
-		refresh.clicked.addListener(new UtilEventListener<QButton>() {
-			
-			@Override
-			public void eventHappened(QButton msg) {
-				refresh();
-			}
-		});
 		installEditModeButtons(page);
 		page.submitToUI(new Runnable() {
 			
@@ -65,37 +58,31 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				toDelete.remove(f.getName());
 				if(exists==null)
 				{
-					QThumb t=new QThumb(page, "thumb-"+f.getName(), folder, f);
-					exists=t;
-					setupThumbEditObjects(f, t);
-					t.l=new QDiv(page, "div-"+f.getPrefixedName());
-					t.addChild(t.l);
-					new DomCreator() {
+					LabelsGenerator lg=new LabelsGenerator() {
 						@Override
-						public void generateDom() {
-							write("<div id=\"div-");
-							writeHtml(f.getPrefixedName());
-							write("\" style=\"width: 320px; height: 250px;\">\n\t<div id=\"view-");
-							writeHtml(f.getName());
-							write("\" style=\"height: 90%\">\n");
-							t.generateExampleHtmlObject(this);
-							write("\t</div>\n");
+						public void generateLables(FotosFile f, HtmlTemplate parent, QThumb t) {
 							Writer pre=AbstractFolderViewPage.this.getWriter();
 							try
 							{
-								AbstractFolderViewPage.this.setWriter(getWriter());
-								write("\t<div style=\"height:10%\">\n");
+								AbstractFolderViewPage.this.setWriter(parent.getWriter());
 								generateThumbLabels(f, t);
-								write("\t</div>\n");
 							}finally
 							{
 								AbstractFolderViewPage.this.setWriter(pre);
 							}
-							write("</div>\n");
+						}
+					};
+					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg);
+					exists=t;
+					setupThumbEditObjects(f, t);
+					new DomCreator() {
+						@Override
+						public void generateDom() {
+							t.generateHtmlObject(this);
 						}
 					}.initialize(page, "content");
 					thumbs.put(f.getName(), t);
-					if(FotosFile.isImage(f))
+					if(FotosFile.isImage(f)||FotosFile.isVideo(f))
 					{
 						QButton view=new QButton(page, "view-"+f.getName());
 						t.addChild(view);
@@ -138,7 +125,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			new DomCreator() {
 				@Override
 				public void generateDom() {
-					write("<div id=\"viewer\" style=\"top: 0%; left: 0%; width: 100%; height: 100%; position:absolute; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%;\"></button>\n</div>\n");
+					write("<div id=\"viewer\" style=\"top: 0%; left: 0%; width: 100%; height: 100%; position:absolute; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%; overflow:hidden;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%; overflow:hidden;\"></button>\n</div>\n");
 				}
 			}.initialize(page, "documentBody");
 			generateViews();
@@ -169,21 +156,21 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		}
 
 		private void generateViews() {
-			generateView(t.f, "viewer-image", "viewer", "viewer-image-image");
+			generateView(t.f, "viewer-image", "viewer", "viewer-image-image", false);
 			new InstantJS(page.getCurrentTemplate()) {
 				@Override
 				public void generate() {
 					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
 				}
 			}.generate();
-			generateView(thumbs.get(t.prevName).f, "viewer-image-prev", "viewer-prev", null);
-			generateView(thumbs.get(t.nextName).f, "viewer-image-next", "viewer-next", null);
+			generateView(thumbs.get(t.prevName).f, "viewer-image-prev", "viewer-prev", null, true);
+			generateView(thumbs.get(t.nextName).f, "viewer-image-next", "viewer-next", null, true);
 			img=new QDiv(page, "viewer-image");
 			prevImg=new QDiv(page, "viewer-image-prev");
 			nextImg=new QDiv(page, "viewer-image-next");
 		}
 
-		private void generateView(FotosFile f, String id, String parent, String imageId)
+		private void generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
 		{
 			List<ImageLoaderLauncher> subImages=new ArrayList<>();
 			new DomCreator() {
@@ -195,7 +182,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					if(f.isFolder())
 					{
 						subImages.addAll(new FolderPreview(this).generatePreview(folder, (FotosFolder)f, false));
-					}else
+					}else if(FotosFile.isImage(f))
 					{
 						write("\t<img ");
 						writeObject(imageId==null?"":"id=\""+imageId+"\"");
@@ -203,7 +190,25 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 						writeHtml(f.getName());
 						write("?size=");
 						writeObject(selectedSize);
-						write("\" style=\"max-width:100%; max-height:100%\" class=\"center\"></img>\n");
+						write("\" style=\"max-width:100%; max-height:100%;\" class=\"center ");
+						writeObject(f.getRotation().getJSClass());
+						write("\"></img>\n");
+					}
+					else if(FotosFile.isVideo(f))
+					{
+						if(preview)
+						{
+							write("VIDEO FILE\n");
+						}else
+						{
+							write("<video width=\"100%\" height=\"100%\" controls>\n  <source src=\"");
+							writeHtml(f.getName());
+							write("?video=html5\" type=\"video/webm\">\nYour browser does not support the video tag.\n</video>\n");
+						}
+					}
+					else
+					{
+						write("Unknown file type\n");
 					}
 					write("\t</div>\n");
 				}
@@ -262,7 +267,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		writeObject(folder.storage.args.nThumbnailThread);
 		write(");\nwindow.onload=function()\n{\n");
 		generateUploadInitializer();
-		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\ndiv.center\n{\n\ttext-align: center;\n}\n</style>\n");
+		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\n.thumb-area {\n\twidth:100%;\n\theight:100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\nimg.rotate-90\n{\n\ttransform: rotate(90deg);\n}\nimg.rotate-180\n{\n\ttransform: rotate(180deg);\n}\nimg.rotate-270\n{\n\ttransform: rotate(270deg);\n}\ndiv.center\n{\n\ttext-align: center;\n}\n</style>\n");
 	}
 	
 	abstract protected void additionalHeaders();
@@ -291,7 +296,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		writeHtml(getName());
 		write(".zip\">Download all as ");
 		writeHtml(getName());
-		write(".zip</a><br/>\n\n<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n");
+		write(".zip</a><br/>\n\n");
 		generateBodyPartsEdit();
 		if(!folder.isRoot())
 		{

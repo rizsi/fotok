@@ -7,79 +7,90 @@ import java.util.List;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.IInMemoryPost;
 import hu.qgears.quickjs.qpage.QComponent;
-import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QPage;
 
 public class QThumb extends QComponent {
+	public interface LabelsGenerator
+	{
+		void generateLables(FotosFile f, HtmlTemplate parent, QThumb t);
+	}
 	public FotosFile f;
-	public QDiv l;
 	public String prevName;
 	public String nextName;
 	FotosFolder parent;
+	private String thumbId;
+	LabelsGenerator labelsGenerator;
+	ERotation rot=ERotation.rotation0;
 	private List<ImageLoaderLauncher> imagesToLoad=new ArrayList<>(1);
-	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f) {
+	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f, LabelsGenerator labelsGenerator) {
 		super(page, id);
 		this.f=f;
 		this.parent=parent;
+		this.labelsGenerator=labelsGenerator;
+		if(f!=null)
+		{
+			rot=f.getRotation();
+		}
 	}
 	
 	@Override
-	public void generateExampleHtmlObject(HtmlTemplate parent) {
-		setWriter(parent.getWriter());
-		write("<div id=\"");
-		writeHtml(id);
-		write("\" style=\"width:100%; height:100%;\">\n");
-		if(FotosFile.isImage(f))
+	public void generateHtmlObject(HtmlTemplate parent) {
+		try(ResetOutputObject roo=setParent(parent))
 		{
-			String id="img-thumb-"+f.getName();
-			String ref=f.getName()+"?size=thumb";
-			imagesToLoad.add(new ImageLoaderLauncher(id, ref));
-			write("<img id=\"");
+			write("<div id=\"");
 			writeHtml(id);
-			write("\" src=\"");
-			writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
-			write("\" class=\"thumb-img center\"></img>\n");
-		}else
-		{
-			if(f.isFolder())
+			write("\" style=\"width: 320px; height: 250px;\">\n\t<div id=\"view-");
+			writeHtml(f.getName());
+			write("\" style=\"height: 90%\">\n");
+			if(FotosFile.isImage(f))
 			{
-				write("\t\t\t<a href=\"");
-				writeHtml(f.getName());
-				write("/\" class=\"thumb-img\">\n");
-				imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true));
-				write("\t\t\t</a>\n");
-			}else
-			{
-				String id="img-unknown-thumb-"+f.getName();
-				write("<a href=\"");
-				writeHtml(f.getName());
-				write("\" download=\"");
-				writeHtml(f.getName());
-				write("\" class=\"thumb-img\">\n\t<img id=\"");
-				writeHtml(id);
+				thumbId="img-thumb-"+f.getName();
+				String ref=f.getName()+"?size=thumb";
+				imagesToLoad.add(new ImageLoaderLauncher(thumbId, ref));
+				write("<img id=\"");
+				writeHtml(thumbId);
 				write("\" src=\"");
 				writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
-				write("\" class=\"thumb-img center\"></img>\n</a>\n");
+				write("\" class=\"thumb-img center ");
+				writeObject(rot.getJSClass());
+				write("\"></img>\n");
+			}else
+			{
+				if(f.isFolder())
+				{
+					write("\t\t\t<a href=\"");
+					writeHtml(f.getName());
+					write("/\" class=\"thumb-img\">\n");
+					imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true));
+					write("\t\t\t</a>\n");
+				}else if(FotosFile.isVideo(f))
+				{
+					write("<a href=\"");
+					writeHtml(f.getName());
+					write("\" download=\"");
+					writeHtml(f.getName());
+					write("\" class=\"thumb-img\">\nVIDEO DOWNLOAD\n</a>\n");
+				}
+				else
+				{
+					String id="img-unknown-thumb-"+f.getName();
+					write("<a href=\"");
+					writeHtml(f.getName());
+					write("\" download=\"");
+					writeHtml(f.getName());
+					write("\" class=\"thumb-img\">\n\t<img id=\"");
+					writeHtml(id);
+					write("\" src=\"");
+					writeHtml(Fotok.clargs.contextPath+Fotok.fImages+"/Image-missing.svg");
+					write("\" class=\"thumb-img center\"></img>\n</a>\n");
+				}
 			}
+			write("\t</div>\n\t<div style=\"height:10%\">\n");
+			labelsGenerator.generateLables(f, this, this);
+			write("\t</div>\n</div>\t\n");
 		}
-		write("\t</div>\n");
-		setWriter(null);
 	}
 	
-	@Override
-	public void doInit() {
-		setParent(page.getCurrentTemplate());
-		write("\tnew QThumb(page, \"");
-		writeObject(id);
-		write("\");\n");
-		for(ImageLoaderLauncher ill: imagesToLoad)
-		{
-			ill.launch(this);
-		}
-		//	globalImageSerialLoad.loadImage("img-thumb-#JSf.getName()#", "#JSf.getName()#?thumb=1");
-		setParent(null);
-	}
-
 	@Override
 	public void handle(HtmlTemplate parent, IInMemoryPost post) throws IOException {
 		// TODO Auto-generated method stub
@@ -91,6 +102,50 @@ public class QThumb extends QComponent {
 		write("\tpage.components[\"");
 		writeJSValue(id);
 		write("\"].scrollIntoView();\n");
+		setParent(null);
+	}
+
+	public ERotation rotate() {
+		if(FotosFile.isImage(f))
+		{
+			rot=ERotation.values()[(rot.ordinal()+1)%ERotation.values().length];
+			setParent(page.getCurrentTemplate());
+			write("\tpage.components[\"");
+			writeJSValue(id);
+			write("\"].setRotation(\"");
+			writeJSValue(thumbId);
+			write("\", \"");
+			writeJSValue(rot.getJSClass());
+			write("\");\n");
+			setParent(null);
+		}
+		return rot;
+	}
+
+	@Override
+	public void generateHtmlObject() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	protected void doInitJSObject() {
+		setParent(page.getCurrentTemplate());
+		write("\tnew QThumb(page, \"");
+		writeJSValue(id);
+		write("\");\n");
+		if(thumbId!=null)
+		{
+			write("\tpage.components[\"");
+			writeJSValue(id);
+			write("\"].setImage(document.getElementById(\"");
+			writeJSValue(thumbId);
+			write("\"));\n");
+		}
+		for(ImageLoaderLauncher ill: imagesToLoad)
+		{
+			ill.launch(this);
+		}
 		setParent(null);
 	}
 }

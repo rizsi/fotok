@@ -13,4 +13,5 @@ Require-Bundle: hu.qgears.quickjs;bundle-version="1.0.0",
  org.eclipse.jetty.servlet;bundle-version="9.2.13",
  javax.servlet;bundle-version="3.1.0",
  google-apis;bundle-version="1.0.0",
- org.apache.log4j;bundle-version="1.2.15"
+ org.apache.log4j;bundle-version="1.2.15",
+ com.jspatech.slf4.consoleimpl;bundle-version="1.0.0"

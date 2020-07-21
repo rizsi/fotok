@@ -51,6 +51,10 @@ public class Authenticator extends AbstractHandler {
 	public Authenticator(AbstractHandler delegate, Args clargs) {
 		this.delegate=delegate;
 		this.clargs = clargs;
+		if(clargs.demoAllPublic)
+		{
+			return;
+		}
 		reloadConfig();
 		Timer t = new Timer(true);
 		t.schedule(new TimerTask() {
@@ -109,14 +113,14 @@ public class Authenticator extends AbstractHandler {
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-		if(Fotok.clargs.redirectServerName!=null)
-		{
-			baseRequest.setServerName(Fotok.clargs.redirectServerName);
-		}
-		if(Fotok.clargs.redirectServerPort!=null)
-		{
-			baseRequest.setServerPort(Fotok.clargs.redirectServerPort);
-		}
+//		if(Fotok.clargs.redirectServerName!=null)
+//		{
+//			baseRequest.setServerName(Fotok.clargs.redirectServerName);
+//		}
+//		if(Fotok.clargs.redirectServerPort!=null)
+//		{
+//			baseRequest.setServerPort(Fotok.clargs.redirectServerPort);
+//		}
 		if(Fotok.clargs.redirectServerScheme!=null)
 		{
 			baseRequest.setScheme(Fotok.clargs.redirectServerScheme);	
@@ -129,13 +133,20 @@ public class Authenticator extends AbstractHandler {
 			delegate.handle(target, baseRequest, request, response);
 		}else
 		{
-			if(user==null)
+			if(user==null&&!clargs.demoAllPublic)
 			{
 				response.sendRedirect(Fotok.clargs.contextPath+"/public/login/");
 				baseRequest.setHandled(true);
 			}else
 			{
-				Mode mode=getMode(user, target);
+				Mode mode;
+				if(clargs.demoAllPublic)
+				{
+					mode=Mode.rw;
+				}else
+				{
+					mode=getMode(user, target);
+				}
 				if(mode==null)
 				{
 					response.sendRedirect(Fotok.clargs.contextPath+"/listing/");

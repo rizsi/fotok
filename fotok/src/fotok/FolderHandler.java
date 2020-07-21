@@ -59,6 +59,11 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 				return;
 			}else if("/".equals(ff.subPath))
 			{
+//				if("true".equals(baseRequest.getParameter("video")))
+//				{
+//					new VideoHandler().handle(target, baseRequest, request, response);
+//					return;
+//				}
 				if(ff.folder.exists())
 				{
 					dQPage.handle(ff.subPath, baseRequest, request, response, ff);
@@ -79,7 +84,11 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 				}
 				ESize size=null;
 				try {
-					size=ESize.valueOf(baseRequest.getParameter("size"));
+					String sizeParam=baseRequest.getParameter("size");
+					if(sizeParam!=null)
+					{
+						size=ESize.valueOf(sizeParam);
+					}
 				} catch (Exception e) {
 				}
 				String path=thumbsHandler.createThumb(ff.file, size);

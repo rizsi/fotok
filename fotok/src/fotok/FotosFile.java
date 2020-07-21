@@ -1,6 +1,7 @@
 package fotok;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -10,13 +11,19 @@ import java.util.Set;
 import hu.qgears.commons.UtilFile;
 
 public class FotosFile {
+	public static final String EXT_ROTATION=".rotation";
 	protected FotosStorage storage;
 	Path p;
 	static Set<String> knowExtensions=new HashSet<>();
+	static Set<String> knowVideoExtensions=new HashSet<>();
 	{
 		knowExtensions.add("jpg");
 		knowExtensions.add("jpeg");
 		knowExtensions.add("png");
+		// Video file extensions that are handled by the program. See VideoHandler class
+		knowVideoExtensions.add("mts");
+		knowVideoExtensions.add("mov");
+		knowVideoExtensions.add("webm");
 	}
 	
 	public FotosFile(FotosStorage storage, Path p) {
@@ -33,6 +40,11 @@ public class FotosFile {
 
 	protected File getFile() {
 		return new File(storage.images, p.toStringPath());
+	}
+	
+	protected File getRotationFile()
+	{
+		return new File(storage.images, p.toStringPath()+EXT_ROTATION);
 	}
 
 	public static FotosFile create(FotosFolder parent, File f) {
@@ -132,12 +144,27 @@ public class FotosFile {
 		}
 		return false;
 	}
+	public static boolean isVideo(File f) {
+		String name=f.getName();
+		int lastIdx=name.lastIndexOf('.');
+		if(lastIdx>=0)
+		{
+			String ext=name.substring(lastIdx+1);
+			ext=ext.toLowerCase(Locale.US);
+			return knowVideoExtensions.contains(ext);
+		}
+		return false;
+	}
 	public static boolean isImage(FotosFile f) {
 		return isImage(f.getFile());
 	}
 	public boolean isFolder() {
 		return false;
 	}
+	public static boolean isVideo(FotosFile f) {
+		return isVideo(f.getFile());
+	}
+
 	@Override
 	public String toString() {
 		return ""+getName()+(isFolder()?"/":"");
@@ -147,5 +174,36 @@ public class FotosFile {
 		Path p2=new Path(p);
 		p2.pieces=p2.pieces.subList(n, p2.pieces.size());
 		return p2.toStringPath();
+	}
+	public void setRotate(ERotation rotate) {
+		if(isImage(this))
+		{
+			File rf=getRotationFile();
+			try {
+				if(rotate==ERotation.rotation0)
+				{
+					rf.delete();
+				}else
+				{
+					UtilFile.saveAsFile(rf, rotate.name());
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	public ERotation getRotation() {
+		try {
+			File rf=getRotationFile();
+			if(rf.exists())
+			{
+				return ERotation.valueOf(UtilFile.loadAsString(rf));
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return ERotation.rotation0;
 	}
 }

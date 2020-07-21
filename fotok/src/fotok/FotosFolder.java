@@ -139,7 +139,7 @@ public class FotosFolder extends FotosFile {
 		List<FotosFile> ret=new ArrayList<>();
 		for(File f: ls)
 		{
-			if(!f.getName().endsWith(".part"))
+			if(!f.getName().endsWith(".part") && !f.getName().endsWith(EXT_ROTATION))
 			{
 				ret.add(FotosFile.create(this, f));
 			}
