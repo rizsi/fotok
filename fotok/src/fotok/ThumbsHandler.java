@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -12,6 +13,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 
 import hu.qgears.commons.UtilFile;
+import hu.qgears.commons.UtilString;
 
 public class ThumbsHandler extends ResourceHandler {
 	FotosStorage storage;
@@ -139,9 +141,9 @@ public class ThumbsHandler extends ResourceHandler {
 	}
 	private Point loadSize(File sizeFile) throws IOException {
 		String s=UtilFile.loadAsString(sizeFile);
-		String[] parts=s.split("x");
-		int w=Integer.parseInt(parts[0]);
-		int h=Integer.parseInt(parts[1]);
+		List<String> parts=UtilString.split(s, "x\r\n");
+		int w=Integer.parseInt(parts.get(0));
+		int h=Integer.parseInt(parts.get(1));
 		if(w<1||h<1)
 		{
 			throw new RuntimeException("Image size is 0 or negative: "+s);
