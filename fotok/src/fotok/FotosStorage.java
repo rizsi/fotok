@@ -2,6 +2,8 @@ package fotok;
 
 import java.io.File;
 
+import org.eclipse.jetty.server.Request;
+
 import fotok.Fotok.Args;
 
 public class FotosStorage {
@@ -16,7 +18,7 @@ public class FotosStorage {
 		this.cache = cache;
 		root=new FotosFolder(this, new Path("/")).setRoot(true);
 	}
-	public ResolvedQuery resolve(Path p) {
+	public ResolvedQuery resolve(Path p, Request baseRequest) {
 		FotosFolder resolved=root;
 		FotosFile f;
 		String localName;
@@ -38,7 +40,10 @@ public class FotosStorage {
 			f=FotosFile.create(resolved, p.getFileName());
 		}
 		ResolvedQuery ret=new ResolvedQuery(resolved, f, localName);
+		if("true".equals(baseRequest.getParameter("edit")))
+		{
+			ret.editModeAsked=true;
+		}
 		return ret;
 	}
-	
 }

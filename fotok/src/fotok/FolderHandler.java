@@ -57,7 +57,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		Path p=new Path(target);
 		p.validate();
-		ResolvedQuery ff=storage.resolve(p);
+		ResolvedQuery ff=storage.resolve(p, baseRequest);
 		ff.mode=Authenticator.getAccessMode(baseRequest);
 		try
 		{
@@ -119,7 +119,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	@Override
 	public AbstractQPage createPage(Object request) throws Exception {
 		ResolvedQuery ff=(ResolvedQuery) request;
-		if(ff.mode==Mode.rw)
+		if(ff.mode==Mode.rw && ff.isEditModeAsked())
 		{
 			return new FolderViewPageRW(ff.mode, ff.folder, delegate);
 		}else

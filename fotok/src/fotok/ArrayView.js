@@ -22,7 +22,7 @@ class ArrayView2
 	}
 	windowResized()
 	{
-		console.info("Window resized: "+this.src.clientWidth);
+		// console.info("Window resized: "+this.src.clientWidth);
 		this.reorganize();
 	}
 	mutation(mutations, observer)
@@ -52,7 +52,7 @@ class ArrayView2
 			if(c.nodeType==1)
 			{
 				var domHolder=c;
-				domHolder.style.position="absolute";
+				domHolder.style.position="relative";
 				domHolder.style.width=this.width+"px";
 				domHolder.style.height=this.height+"px";
 				domHolder.style.left=(this.index%this.columns)*this.width+"px";
@@ -70,6 +70,7 @@ class ArrayView2
 				this.index++;
 			}
 		}
+		this.src.style.height=(this.index+this.columns-1)/this.columns*this.height+"px";
 	}
 }
 

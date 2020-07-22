@@ -1,3 +1,5 @@
+// TODO delete - no need to resize image automatically
+
 class ImageResize
 {
 	constructor(img)
@@ -34,6 +36,7 @@ class ImageResize
 			var ih=img.naturealHeight;
 			var w=par.clientWidth;
 			var h=par.clientHeight;
+			console.info("img w/h parent w/h: "+iw+"/"+ih+" "+w+"/"+h);
 			if(iw/ih>w/h)
 			{
 				img.style.width=""+w+"px";

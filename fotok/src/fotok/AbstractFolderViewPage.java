@@ -124,28 +124,34 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	{
 		QThumb t;
 		QDiv img=null;
+		QButton rotate=null;
 		QDiv prevImg=null;
 		QDiv nextImg=null;
+		QButton whole;
 		public Viewer(QThumb t) {
 			super();
 			this.t = t;
 		}
 
 		public void start() {
+			whole=new QButton(page, "viewer");
+			rotate=new QButton(whole, "viewer-image-rotate");
+			rotate.clicked.addListener(e->{rotate();});
 			new DomCreator() {
 				@Override
 				public void generateDom() {
-					write("<div id=\"viewer\" style=\"top: 0%; left: 0%; width: 100%; height: 100%; position:absolute; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%; overflow:hidden;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%; overflow:hidden;\"></button>\n</div>\n");
+					write("<div id=\"viewer\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%; overflow:hidden;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%; overflow:hidden;\"></button>\n<button id=\"");
+					writeHtml(rotate.getId());
+					write("\" style=\"position: absolute; z-index:1; left:50%; top:10%; width=10%;\">Rotate</button>\n</div>\n");
 				}
 			}.initialize(page, "documentBody");
-			generateViews();
 			// img.src.setPropertyFromServer(t.f.getName());
-			QButton d=new QButton(page, "viewer");
-			QButton prev=new QButton(page, "viewer-prev");
+			generateViews();
+			QButton prev=new QButton(whole, "viewer-prev");
 			prev.clicked.addListener(e->prev());
-			QButton next=new QButton(page, "viewer-next");
+			QButton next=new QButton(whole, "viewer-next");
 			next.clicked.addListener(e->next());
-			d.clicked.addListener(e->deleteWindow(d));
+			whole.clicked.addListener(e->deleteWindow(whole));
 			new InstantJS(page.getCurrentTemplate()) {
 				@Override
 				public void generate() {
@@ -153,6 +159,25 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				}
 			}.generate();
 		}
+		private void rotate() {
+			if(mode==Mode.rw)
+			{
+				ERotation newr=t.rotate();
+				t.f.setRotate(newr);
+				try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
+				{
+					write("\tpage.components[\"");
+					writeJSValue(t.getId());
+					write("\"].setRotation(\"");
+					writeJSValue("viewer-image-image");
+					write("\", \"");
+					writeJSValue(newr.getJSClass());
+					write("\");\n");
+					setParent(null);
+				}
+			}
+		}
+
 		private Object deleteWindow(QButton d) {
 			d.dispose();
 			new InstantJS(page.getCurrentTemplate()) {
@@ -167,17 +192,17 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 		private void generateViews() {
 			generateView(t.f, "viewer-image", "viewer", "viewer-image-image", false);
-			new InstantJS(page.getCurrentTemplate()) {
-				@Override
-				public void generate() {
-					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
-				}
-			}.generate();
+//			new InstantJS(page.getCurrentTemplate()) {
+//				@Override
+//				public void generate() {
+//					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
+//				}
+//			}.generate();
 			generateView(thumbs.get(t.prevName).f, "viewer-image-prev", "viewer-prev", null, true);
 			generateView(thumbs.get(t.nextName).f, "viewer-image-next", "viewer-next", null, true);
-			img=new QDiv(page, "viewer-image");
-			prevImg=new QDiv(page, "viewer-image-prev");
-			nextImg=new QDiv(page, "viewer-image-next");
+			img=new QDiv(whole, "viewer-image");
+			prevImg=new QDiv(whole, "viewer-image-prev");
+			nextImg=new QDiv(whole, "viewer-image-next");
 		}
 
 		private void generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
@@ -200,7 +225,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 						writeHtml(f.getName());
 						write("?size=");
 						writeObject(selectedSize);
-						write("\" style=\"max-width:100%; max-height:100%;\" class=\"center ");
+						write("\" style=\"max-width:100%; max-height:100%; position: relative; top: 50%; transform: translateY(-50%);\" class=\"center ");
 						writeObject(f.getRotation().getJSClass());
 						write("\"></img>\n");
 					}
@@ -300,19 +325,25 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			writeHtml(user.getEmail());
 			write("</a><br/>\n");
 		}
-		write("<a href=\"");
+		write("\n");
+		if(!folder.isRoot())
+		{
+			write("<a href=\"..\">Parent folder</a>\n");
+		}
+		write("<div id=\"content\">\n</div>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<a href=\"");
 		writeHtml(getName());
 		write(".zip?download=all\" download=\"");
 		writeHtml(getName());
 		write(".zip\">Download all as ");
 		writeHtml(getName());
-		write(".zip</a><br/>\n\n");
+		write(".zip</a><br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<div id=\"editor-parts\">\n");
 		generateBodyPartsEdit();
-		if(!folder.isRoot())
+		if(mode==Mode.rw)
 		{
-			write("<a href=\"..\">Parent folder</a>\n");
+			write("<a href=\"?edit=true\">Edit mode</a>\n");
+			
 		}
-		write("<div id=\"content\">\n</div>\n");
+		write("</div>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n");
 	}
 
 	/**

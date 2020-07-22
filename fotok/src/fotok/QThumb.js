@@ -50,7 +50,7 @@ class QThumb extends QComponent
 				this.imgDom.style.position="absolute";
 				this.imgDom.style.top=Math.floor((this.clientHeight-h)/2)+"px";
 				this.imgDom.style.left=Math.floor((this.clientWidth-w)/2)+"px";
-				this.imgDom.style.position="absolute";
+				this.dom.style.position="absolute";
 			}catch(ex)
 			{
 				console.error(ex);

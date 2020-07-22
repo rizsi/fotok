@@ -12,7 +12,6 @@ import hu.qgears.quickjs.qpage.QTextEditor;
 import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 
 public class FolderViewPageRW extends AbstractFolderViewPage {
-	private UploadHandlerDelegate delegate;
 	QLabel shares;
 	QLabel processing;
 	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, UploadHandlerDelegate delegate) {
@@ -21,28 +20,10 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		{
 			throw new RuntimeException();
 		}
-		this.delegate=delegate;
 	}
 
 	@Override
 	protected void installEditModeButtons(QPage page) {
-		QButton refresh=new QButton(page, "refresh");
-		refresh.clicked.addListener(new UtilEventListener<QButton>() {
-			
-			@Override
-			public void eventHappened(QButton msg) {
-				refresh();
-			}
-		});
-		QButton newFolder=new QButton(page, "newFolder");
-		newFolder.clicked.addListener(x->newFolder());
-		QButton share=new QButton(page, "share");
-		share.clicked.addListener(c->share());
-		shares=new QLabel(page, "shares");
-		QButton processFolder=new QButton(page, "processFolder");
-		processFolder.clicked.addListener(x->processFolder());
-		processing=new QLabel(page, "processFolderProgress");
-		processing.innerhtml.setPropertyFromServer("");
 	}
 	private Object processFolder() {
 		processing.innerhtml.setPropertyFromServer("Finding all files...");
@@ -231,6 +212,23 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	
 	@Override
 	protected void generateBodyPartsEdit() {
+		QButton refresh=new QButton(page, "refresh");
+		refresh.clicked.addListener(new UtilEventListener<QButton>() {
+			
+			@Override
+			public void eventHappened(QButton msg) {
+				refresh();
+			}
+		});
+		QButton newFolder=new QButton(page, "newFolder");
+		newFolder.clicked.addListener(x->newFolder());
+		QButton share=new QButton(page, "share");
+		share.clicked.addListener(c->share());
+		shares=new QLabel(page, "shares");
+		QButton processFolder=new QButton(page, "processFolder");
+		processFolder.clicked.addListener(x->processFolder());
+		processing=new QLabel(page, "processFolderProgress");
+		processing.innerhtml.setPropertyFromServer("");
 		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n");
 	}
 }

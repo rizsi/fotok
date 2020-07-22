@@ -7,10 +7,14 @@ public class ResolvedQuery {
 	public String subPath;
 	public FotosFile file;
 	public Mode mode;
+	public boolean editModeAsked;
 	public ResolvedQuery(FotosFolder folder, FotosFile file, String subPath) {
 		super();
 		this.folder = folder;
 		this.subPath = subPath;
 		this.file=file;
+	}
+	public boolean isEditModeAsked() {
+		return editModeAsked;
 	}
 }
