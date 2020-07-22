@@ -12,28 +12,31 @@ class ImageResize
 			var par=img.parentNode;
 			if(par)
 			{
-				var config = { attributes: true, childList: true };
-		
-				MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-				var observer = new MutationObserver(this.mutation.bind(this));
-				// define what element should be observed by the observer
-				// and what types of mutations trigger the callback
-				observer.observe(par, config);
+				try{
+				new ResizeObserver(this.mutation.bind(this)).observe(par);
+				}catch(e)
+				{
+					console.error("Resize observer add: ", e);
+				}
 			}
 		}
 	}
 	mutation()
 	{
 		console.info("Mutation!");
+		this.onload();
 	}
 	onload()
 	{
 		var img=this.img;
+		if (!img.complete) {
+			return false;
+		}
 		var par=img.parentNode;
 		if(par)
 		{
 			var iw=img.naturalWidth;
-			var ih=img.naturealHeight;
+			var ih=img.naturalHeight;
 			var w=par.clientWidth;
 			var h=par.clientHeight;
 			console.info("img w/h parent w/h: "+iw+"/"+ih+" "+w+"/"+h);
@@ -41,8 +44,10 @@ class ImageResize
 			{
 				img.style.width=""+w+"px";
 				img.style.height="";
+				img.style.top=(h-ih*w/iw)/2+"px";
 			}else
 			{
+				img.style.top="0px";
 				img.style.width="";
 				img.style.height=""+h+"px";
 			}

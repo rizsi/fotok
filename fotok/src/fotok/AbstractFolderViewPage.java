@@ -160,21 +160,21 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}.generate();
 		}
 		private void rotate() {
+			ERotation newr=t.rotate();
 			if(mode==Mode.rw)
 			{
-				ERotation newr=t.rotate();
 				t.f.setRotate(newr);
-				try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
-				{
-					write("\tpage.components[\"");
-					writeJSValue(t.getId());
-					write("\"].setRotation(\"");
-					writeJSValue("viewer-image-image");
-					write("\", \"");
-					writeJSValue(newr.getJSClass());
-					write("\");\n");
-					setParent(null);
-				}
+			}
+			try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
+			{
+				write("\tpage.components[\"");
+				writeJSValue(t.getId());
+				write("\"].setRotation(\"");
+				writeJSValue("viewer-image-image");
+				write("\", \"");
+				writeJSValue(newr.getJSClass());
+				write("\");\n");
+				setParent(null);
 			}
 		}
 
@@ -192,12 +192,12 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 		private void generateViews() {
 			generateView(t.f, "viewer-image", "viewer", "viewer-image-image", false);
-//			new InstantJS(page.getCurrentTemplate()) {
-//				@Override
-//				public void generate() {
-//					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
-//				}
-//			}.generate();
+			new InstantJS(page.getCurrentTemplate()) {
+				@Override
+				public void generate() {
+					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
+				}
+			}.generate();
 			generateView(thumbs.get(t.prevName).f, "viewer-image-prev", "viewer-prev", null, true);
 			generateView(thumbs.get(t.nextName).f, "viewer-image-next", "viewer-next", null, true);
 			img=new QDiv(whole, "viewer-image");
@@ -225,7 +225,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 						writeHtml(f.getName());
 						write("?size=");
 						writeObject(selectedSize);
-						write("\" style=\"max-width:100%; max-height:100%; position: relative; top: 50%; transform: translateY(-50%);\" class=\"center ");
+						write("\" style=\"max-width:100%; max-height:100%; position: relative;\" class=\"center ");
 						writeObject(f.getRotation().getJSClass());
 						write("\"></img>\n");
 					}
@@ -326,6 +326,10 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			write("</a><br/>\n");
 		}
 		write("\n");
+		if(this instanceof FolderViewPageRW)
+		{
+			write("<a href=\".\">leave edit mode</a><br/><br/><br/><br/>\n");
+		}
 		if(!folder.isRoot())
 		{
 			write("<a href=\"..\">Parent folder</a>\n");
