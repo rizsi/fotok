@@ -44,7 +44,7 @@ public class CreateFolder extends AbstractQPage
 
 	@Override
 	protected void writeBody() {
-		write("<h1>Folder does not exist</h1>\n<button id=\"create\">Create folder</button>\n");
+		write("<h1>Folder does not exist</h1>\n<button id=\"create\">Create folder</button>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<a href=\"../\">Parent folder - ../</a>\n\n");
 	}
 
 }

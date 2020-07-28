@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -13,9 +14,12 @@ import org.eclipse.jetty.server.Request;
 
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
+import hu.qgears.commons.ProgressCounter;
+import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
+import hu.qgears.quickjs.qpage.QLabel;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
 import hu.qgears.quickjs.utils.UtilHttpContext;
@@ -26,9 +30,11 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	protected Mode mode;
 	protected String selectedSize="normal";
 	protected String contextPath;
-	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder) {
+	ThumbsHandler thumbsHandler;
+	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, ThumbsHandler thumbsHandler) {
 		this.mode=mode;
 		this.folder=uploadFolder;
+		this.thumbsHandler=thumbsHandler;
 	}
 
 	@Override
@@ -203,6 +209,13 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			img=new QDiv(whole, "viewer-image");
 			prevImg=new QDiv(whole, "viewer-image-prev");
 			nextImg=new QDiv(whole, "viewer-image-next");
+			if(FotosFile.isImage(t.f))
+			{
+				
+			}else
+			{
+				// rotate.setStyle(style, value);
+			}
 		}
 
 		private void generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
@@ -236,7 +249,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 							write("VIDEO FILE\n");
 						}else
 						{
-							write("<video width=\"100%\" height=\"100%\" controls>\n  <source src=\"");
+							write("<video width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\"controls>\n  <source src=\"");
 							writeHtml(f.getName());
 							write("?video=html5\" type=\"video/webm\">\nYour browser does not support the video tag.\n</video>\n");
 						}
@@ -272,7 +285,49 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	}
 
 	private Object view(QThumb t) {
-		new Viewer(t).start();
+		if(FotosFile.isVideo(t.f))
+		{
+			QLabel waitConvert=new QLabel(page);
+			new DomCreator() {
+				@Override
+				public void generateDom() {
+					write("<div id=\"");
+					writeObject(waitConvert.getId());
+					write("\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n</div>\n");
+				}
+			}.initialize(page, "documentBody");
+			new Thread()
+			{
+				public void run()
+				{
+					ProgressCounter pc=new ProgressCounter(new ProgressCounter.AbstractProgressCounterHost() {
+						@Override
+						public void progressStatusUpdate(Stack<ProgressCounterSubTask> tasks) {
+							String s=""+tasks;
+							page.submitToUI(()->{
+								waitConvert.innerhtml.setPropertyFromServer(""+s);
+							});
+						}
+					}, "Convert video");
+					pc.setCurrent();
+					try
+					{
+						thumbsHandler.convertVideo(t.f);
+					}finally
+					{
+						pc.close();
+					}
+					page.submitToUI(()->{
+						waitConvert.dispose();
+						new Viewer(t).start();
+					});
+				}
+			}
+			.start();
+		}else
+		{
+			new Viewer(t).start();
+		}
 		return null;
 	}
 	private String getName()
@@ -323,7 +378,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			writeHtml(contextPath);
 			write("/public/login/logout\">logout ");
 			writeHtml(user.getEmail());
-			write("</a><br/>\n");
+			write("</a><br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n");
 		}
 		write("\n");
 		if(this instanceof FolderViewPageRW)
@@ -332,7 +387,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		}
 		if(!folder.isRoot())
 		{
-			write("<a href=\"..\">Parent folder</a>\n");
+			write("<a href=\"..\">Parent folder</a>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n\n");
 		}
 		write("<div id=\"content\">\n</div>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n<a href=\"");
 		writeHtml(getName());

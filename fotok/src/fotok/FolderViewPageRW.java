@@ -1,9 +1,14 @@
 package fotok;
 
 import java.io.IOException;
+import java.util.Stack;
+import java.util.TimerTask;
 
 import fotok.Authenticator.Mode;
+import hu.qgears.commons.ProgressCounter;
+import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilEventListener;
+import hu.qgears.commons.UtilTimer;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QLabel;
@@ -14,8 +19,9 @@ import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 public class FolderViewPageRW extends AbstractFolderViewPage {
 	QLabel shares;
 	QLabel processing;
-	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, UploadHandlerDelegate delegate) {
-		super(mode, uploadFolder);
+	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, UploadHandlerDelegate delegate, ThumbsHandler thumbsHandler) {
+		super(mode, uploadFolder, thumbsHandler);
+		this.thumbsHandler=thumbsHandler;
 		if(mode!=Mode.rw)
 		{
 			throw new RuntimeException();
@@ -220,6 +226,38 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 				refresh();
 			}
 		});
+		QButton transcode=new QButton(page, "button-transcode");
+		transcode.clicked.addListener(e->{
+			new Thread()
+			{
+				public void run()
+				{
+					ProgressCounter pc=new ProgressCounter(
+							new ProgressCounter.AbstractProgressCounterHost() {
+								@Override
+								public void progressStatusUpdate(Stack<ProgressCounterSubTask> tasks) {
+									String s=""+tasks;
+									page.submitToUI(()->{
+										processing.innerhtml.setPropertyFromServer(s);
+									});
+								}
+							}
+							, "transcode all videos in folder");
+					pc.setCurrent();
+					try
+					{
+						thumbsHandler.convertAll(folder);
+					}finally
+					{
+						pc.close();
+					}
+					page.submitToUI(()->{
+						processing.innerhtml.setPropertyFromServer("Transcode Finshed");
+					});
+				}
+			}
+			.start();
+		});
 		QButton newFolder=new QButton(page, "newFolder");
 		newFolder.clicked.addListener(x->newFolder());
 		QButton share=new QButton(page, "share");
@@ -229,6 +267,6 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		processFolder.clicked.addListener(x->processFolder());
 		processing=new QLabel(page, "processFolderProgress");
 		processing.innerhtml.setPropertyFromServer("");
-		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n");
+		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n<button id=\"button-transcode\">transcode videos</button>\n");
 	}
 }

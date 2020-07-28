@@ -1,9 +1,14 @@
 package fotok;
 
 import java.awt.Point;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +17,8 @@ import java.util.concurrent.Future;
 
 import org.eclipse.jetty.server.handler.ResourceHandler;
 
+import hu.qgears.commons.ProgressCounter;
+import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilFile;
 import hu.qgears.commons.UtilString;
 
@@ -76,33 +83,37 @@ public class ThumbsHandler extends ResourceHandler {
 					default:
 						throw new IOException("Size not implemented: "+size);
 					}
-					execWithKey(key, pb);
+					execWithKey(key, fromProcess(pb));
 				}
 			}
 		}
 		return "/"+file.getCacheFilePath(size).toStringPath();
 	}
-	private void execWithKey(String key, ProcessBuilder pb)
+	private Callable<Object> fromProcess(ProcessBuilder pb)
+	{
+		return new Callable<Object>() {
+			@Override
+			public Object call() {
+				try {
+					Process p=pb.start();
+					p.waitFor();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return null;
+			}
+		};
+	}
+	private void execWithKey(String key, Callable<Object> callable)
 	{
 		Future<Object> p=null;
 		synchronized (this) {
 			p=processing.get(key);
 			if(p==null)
 			{
-				p=storage.args.getThumbingExecutor().submit(new Callable<Object>() {
-					
-					@Override
-					public Object call() {
-						try {
-							Process p=pb.start();
-							p.waitFor();
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						return null;
-					}
-				});
+				p=storage.args.getThumbingExecutor().submit(
+						callable);
 				processing.put(key, p);
 			}
 		}
@@ -131,7 +142,7 @@ public class ThumbsHandler extends ResourceHandler {
 		sizeFile.getParentFile().mkdirs();
 		String key=sizeFile.getAbsolutePath();
 		ProcessBuilder pb=new ProcessBuilder("identify", "-format", "%wx%h",  tgFile.getAbsolutePath()).redirectOutput(sizeFile);
-		execWithKey(key, pb);
+		execWithKey(key, fromProcess(pb));
 		try {
 			return loadSize(sizeFile);
 		} catch (IOException e) {
@@ -149,5 +160,124 @@ public class ThumbsHandler extends ResourceHandler {
 			throw new RuntimeException("Image size is 0 or negative: "+s);
 		}
 		return new Point(w, h);
+	}
+	public String convertVideo(FotosFile file) {
+		// Improved command that uses intel hw acceleration
+		// $ ffmpeg -vaapi_device /dev/dri/renderD128 -hwaccel vaapi -hwaccel_output_format vaapi -i 00000.MTS -f null -
+		File tgFile = file.getFile();
+		File cacheFile = file.getVideoCacheFile();
+		if (tgFile.isDirectory()) {
+			return null;
+		}
+		if(cacheFile==null)
+		{
+			return null;
+		}
+		long lastMod=tgFile.lastModified();
+		if (!cacheFile.exists()||cacheFile.lastModified()<lastMod) {
+			cacheFile.getParentFile().mkdirs();
+			File c=new File(cacheFile.getParentFile(), cacheFile.getName()+".tmp");
+			c.delete();
+			ProcessBuilder pb=new ProcessBuilder("ffmpeg", "-i", tgFile.getAbsolutePath()
+					,"-filter:v", "scale=320:-1"	// Drastically scale down resolution
+					,"-f", "webm", "-vcodec", "libvpx", "-acodec", "libvorbis"
+					//, "-ab", "64000"
+//					,"-filter:v", "fps=fps=30"	// Reduce FPS to 30
+					, "-crf", "22"
+					, c.getAbsolutePath());
+			// pb.redirectError(Redirect.INHERIT);
+			pb.redirectOutput(Redirect.INHERIT);
+			try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask("ffmpeg", 1))
+			{
+				Callable<Object> conversion=new Callable<Object>() {
+					@Override
+					public Object call() throws Exception {
+						Process p;;
+						BufferedReader br;
+						String l;
+						p=pb.start();
+						br=new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8));
+						long all=Long.MAX_VALUE;
+						while((l=br.readLine())!=null)
+						{
+							String t=l.trim();
+							if(t.startsWith("Duration"))
+							{
+								String time=UtilString.split(t, " ,").get(1);
+								System.out.println("Decoded time: "+time);
+								all=decodeTime(time);
+								if(all==0)
+								{
+									all++;
+								}
+							}
+							if(t.startsWith("frame="))
+							{
+								int idx=t.indexOf("time=");
+								if(idx>0)
+								{
+									String time=t.substring(idx+"time=".length(),idx+"time=".length()+11);
+									long at=decodeTime(time);
+									st.setWork(((double)at)/all);
+								}else
+								{
+									System.err.println(t);
+								}
+							}else
+							{
+								System.err.println(l);
+							}
+						}
+						int v=p.waitFor();
+						if(v==0)
+						{
+							java.nio.file.Path cp=cacheFile.toPath();
+							Files.move(c.toPath(), cp);
+						}
+						return null;
+					}
+				};
+				execWithKey(cacheFile.getAbsolutePath(), conversion);
+				System.out.println("Conversion finished: "+cacheFile.getAbsolutePath());
+			}
+		}
+		return "/"+file.getVideoCacheFilePath().toStringPath();
+	}
+	protected long decodeTime(String time) {
+		List<String> parts=UtilString.split(time, ".:");
+		long hr=Long.parseLong(parts.get(0));
+		long min=Long.parseLong(parts.get(1));
+		long sec=Long.parseLong(parts.get(2));
+		long decade=Long.parseLong(parts.get(3));
+		
+		return decade+100l*(sec+60l*(min+60l*(hr)));
+	}
+	public void convertAll(FotosFolder folder) {
+		File f=folder.getImagesFolder();
+		List<File> videofiles=new ArrayList<>();
+		long size=1;
+		for(File g:UtilFile.listFiles(f))
+		{
+			if(FotosFile.isVideo(g))
+			{
+				size+=g.length();
+				videofiles.add(g);
+			}
+		}
+		for(int i=0;i<videofiles.size();++i)
+		{
+			File g=videofiles.get(i);
+			long l=g.length();
+			if(l>0)
+			{
+				try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask(g.getName(), ((double)l)/size))
+				{
+					Path ch=new Path(folder.p);
+					ch.pieces.add(g.getName());
+					FotosFile ff=new FotosFile(storage, ch);
+					convertVideo(ff);
+				}
+			}
+		}
 	}
 }

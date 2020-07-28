@@ -52,7 +52,7 @@ class ArrayView2
 			if(c.nodeType==1)
 			{
 				var domHolder=c;
-				domHolder.style.position="relative";
+				domHolder.style.position="absolute";
 				domHolder.style.width=this.width+"px";
 				domHolder.style.height=this.height+"px";
 				domHolder.style.left=(this.index%this.columns)*this.width+"px";

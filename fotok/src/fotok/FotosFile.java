@@ -120,6 +120,14 @@ public class FotosFile {
 		}
 		return new File(storage.cache, p.toStringPath());
 	}
+	public File getVideoCacheFile() {
+		Path p=getVideoCacheFilePath();
+		if(p==null)
+		{
+			return null;
+		}
+		return new File(storage.cache, p.toStringPath());
+	}
 	public Path getCacheFilePath(ESize size) {
 		if(size==null)
 		{
@@ -131,6 +139,10 @@ public class FotosFile {
 			String name=size+"-"+np.pieces.get(np.pieces.size()-1);
 			np.pieces.set(np.pieces.size()-1, name);
 		}
+		return np;
+	}
+	public Path getVideoCacheFilePath() {
+		Path np=new Path(p);
 		return np;
 	}
 	public static boolean isImage(File f) {

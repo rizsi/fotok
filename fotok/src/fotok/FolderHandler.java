@@ -30,9 +30,12 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		dQPage=new QPageHandler(this);
 		createFolderPage=new QPageHandler(CreateFolder.class);
 		filesHandler = new ResourceHandler();
+//		MimeTypes mt=new MimeTypes();
+//		mt.addMimeMapping("MTS", "video/mts");
 		filesHandler.setResourceBase("/");
 		filesHandler.setBaseResource(Resource.newResource(storage.images));
 		filesHandler.setDirectoriesListed(true);
+//		filesHandler.setMimeTypes(mt);
 		filesHandler.setMinAsyncContentLength(Integer.MAX_VALUE);
 		filesHandler.setMinMemoryMappedContentLength(Integer.MAX_VALUE);
 		
@@ -100,6 +103,14 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 				} catch (Exception e) {
 				}
 				String path=thumbsHandler.createThumb(ff.file, size);
+				if(path==null && "html5".equals(baseRequest.getParameter("video")))
+				{
+					if(!ff.file.getName().endsWith("webm"))
+					{
+						// Not webm file - we convert it into the cache
+						path=thumbsHandler.convertVideo(ff.file);
+					}
+				}
 				if(path!=null)
 				{
 					baseRequest.setPathInfo(path);
@@ -121,10 +132,10 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		ResolvedQuery ff=(ResolvedQuery) request;
 		if(ff.mode==Mode.rw && ff.isEditModeAsked())
 		{
-			return new FolderViewPageRW(ff.mode, ff.folder, delegate);
+			return new FolderViewPageRW(ff.mode, ff.folder, delegate, thumbsHandler);
 		}else
 		{
-			return new FolderViewPageReadOnly(ff.mode, ff.folder);
+			return new FolderViewPageReadOnly(ff.mode, ff.folder, thumbsHandler);
 		}
 	}
 

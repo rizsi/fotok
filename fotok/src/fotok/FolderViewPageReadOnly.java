@@ -4,8 +4,8 @@ import fotok.Authenticator.Mode;
 import hu.qgears.quickjs.qpage.QPage;
 
 public class FolderViewPageReadOnly extends AbstractFolderViewPage {
-	public FolderViewPageReadOnly(Mode mode, FotosFolder uploadFolder) {
-		super(mode, uploadFolder);
+	public FolderViewPageReadOnly(Mode mode, FotosFolder uploadFolder, ThumbsHandler thumbsHandler) {
+		super(mode, uploadFolder, thumbsHandler);
 	}
 
 	@Override
