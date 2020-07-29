@@ -251,7 +251,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 						{
 							write("<video width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\"controls>\n  <source src=\"");
 							writeHtml(f.getName());
-							write("?video=html5\" type=\"video/webm\">\nYour browser does not support the video tag.\n</video>\n");
+							write("?video=html5&format=mp4\" type=\"video/mp4\">\nYour browser does not support the video tag.\n</video>\n");
 						}
 					}
 					else

@@ -162,8 +162,6 @@ public class ThumbsHandler extends ResourceHandler {
 		return new Point(w, h);
 	}
 	public String convertVideo(FotosFile file) {
-		// Improved command that uses intel hw acceleration
-		// $ ffmpeg -vaapi_device /dev/dri/renderD128 -hwaccel vaapi -hwaccel_output_format vaapi -i 00000.MTS -f null -
 		File tgFile = file.getFile();
 		File cacheFile = file.getVideoCacheFile();
 		if (tgFile.isDirectory()) {
@@ -178,13 +176,23 @@ public class ThumbsHandler extends ResourceHandler {
 			cacheFile.getParentFile().mkdirs();
 			File c=new File(cacheFile.getParentFile(), cacheFile.getName()+".tmp");
 			c.delete();
-			ProcessBuilder pb=new ProcessBuilder("ffmpeg", "-i", tgFile.getAbsolutePath()
+			ProcessBuilder pb0=new ProcessBuilder("ffmpeg", "-i", tgFile.getAbsolutePath()
 					,"-filter:v", "scale=320:-1"	// Drastically scale down resolution
 					,"-f", "webm", "-vcodec", "libvpx", "-acodec", "libvorbis"
 					//, "-ab", "64000"
 //					,"-filter:v", "fps=fps=30"	// Reduce FPS to 30
 					, "-crf", "22"
 					, c.getAbsolutePath());
+			ProcessBuilder pb=new ProcessBuilder("ffmpeg", "-i", tgFile.getAbsolutePath()
+							,"-c:v", "copy"	// Copy video stream
+							,"-c:a", "aac"	// Reencode sound
+							,"-f", "mp4" // MP4 format is compatible with most web browsers
+							,"-strict", "experimental" // Dunno but I found it online somewhere :-)
+							,"-b:a", "128k" // Sound bitrate I guess
+							// , "-acodec", "libvorbis"
+							, c.getAbsolutePath());
+			// ffmpeg -i 00101.MTS -c:v copy -c:a aac -strict experimental -b:a 128k output.mp4
+
 			// pb.redirectError(Redirect.INHERIT);
 			pb.redirectOutput(Redirect.INHERIT);
 			try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask("ffmpeg", 1))
@@ -205,7 +213,7 @@ public class ThumbsHandler extends ResourceHandler {
 							{
 								String time=UtilString.split(t, " ,").get(1);
 								System.out.println("Decoded time: "+time);
-								all=decodeTime(time);
+								all=VideoProcessor.decodeTime(time);
 								if(all==0)
 								{
 									all++;
@@ -217,7 +225,7 @@ public class ThumbsHandler extends ResourceHandler {
 								if(idx>0)
 								{
 									String time=t.substring(idx+"time=".length(),idx+"time=".length()+11);
-									long at=decodeTime(time);
+									long at=VideoProcessor.decodeTime(time);
 									st.setWork(((double)at)/all);
 								}else
 								{
@@ -242,15 +250,6 @@ public class ThumbsHandler extends ResourceHandler {
 			}
 		}
 		return "/"+file.getVideoCacheFilePath().toStringPath();
-	}
-	protected long decodeTime(String time) {
-		List<String> parts=UtilString.split(time, ".:");
-		long hr=Long.parseLong(parts.get(0));
-		long min=Long.parseLong(parts.get(1));
-		long sec=Long.parseLong(parts.get(2));
-		long decade=Long.parseLong(parts.get(3));
-		
-		return decade+100l*(sec+60l*(min+60l*(hr)));
 	}
 	public void convertAll(FotosFolder folder) {
 		File f=folder.getImagesFolder();
