@@ -19,6 +19,12 @@ import hu.qgears.commons.ProgressCounter.AbstractProgressCounterHost;
 import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilString;
 
+/**
+ * Transcode videos into a format that is handled by web browsers.
+ * TODO planned features:
+ *  * GPU assisted transcode
+ *  * Quick thumb images https://stackoverflow.com/questions/35880407/get-a-picture-of-the-frame-of-a-video-at-every-second
+ */
 public class VideoProcessor {
 	private File source;
 	private File targetFolder;
