@@ -137,6 +137,7 @@ public class Authenticator extends AbstractHandler {
 				{
 					// Root folder - accessible to all
 					delegate.handle(target, baseRequest, request, response);
+					return;
 				}
 				Mode mode;
 				if(clargs.demoAllPublic)
