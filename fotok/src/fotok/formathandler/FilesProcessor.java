@@ -6,6 +6,7 @@ import java.util.Stack;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import fotok.Fotok;
 import fotok.VideoProcessor;
 import fotok.database.DatabaseAccess;
 import hu.qgears.commons.ProgressCounter;
@@ -70,7 +71,7 @@ public class FilesProcessor {
 				@Override
 				public void run() {
 					try {
-						File root=new File("/tmp/out/image_thumbs/");
+						File root=new File(Fotok.clargs.thumbsFolder,"image_thumbs");
 						File f=new File(root, hash.substring(0,1)+"/"+hash.substring(1,2)+"/"+hash+"."+maxSize+".jpg");
 						f.getParentFile().mkdirs();
 						if(d.width>maxSize||d.height>maxSize)
@@ -109,7 +110,7 @@ public class FilesProcessor {
 						@Override
 						public void run() {
 							try {
-								File root=new File("/tmp/out/video_resizes/");
+								File root=new File(Fotok.clargs.thumbsFolder,"video_resizes");
 								File f=new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
 								f.mkdirs();
 								VideoProcessor vp=new VideoProcessor(file, f, hash);

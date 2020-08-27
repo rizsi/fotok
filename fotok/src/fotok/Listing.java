@@ -12,7 +12,6 @@ import hu.qgears.commons.UtilFile;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
 import hu.qgears.quickjs.utils.UtilHttpContext;
-import rdupes.RDupes;
 import rdupes.RDupesFile;
 import rdupes.RDupesObject;
 import rdupes.RDupesPath;
@@ -37,23 +36,8 @@ public class Listing extends AbstractQPage {
 	}
 	@Override
 	protected void writeBody() {
-		RDupes rd=Fotok.rdupes;
 		User user=User.get(page.getQPageManager());
 		write("<h1>Folders accessed by you</h1>\n\n");
-		if(false)
-		{
-			write("RDupes: Tasks: ");
-			writeObject(rd.tasks.get());
-			write(" Files indexed: ");
-			writeObject(rd.filesProcessed.get());
-			write(" in ");
-			writeObject(rd.foldersProcessed.get());
-			write(" folders ongoing hash: \n");
-			writeObject(rd.nBytesToHahs.get());
-			write(" bytes in ");
-			writeObject(rd.nFileToHash.get());
-			write(" files\n<br/>\n");
-		}
 		write("<input type=\"file\" accept=\"image/*\" multiple>\n<br/>\n<br/>\n<br/>\n<br/>\n");
 		//		visit(rd, "");
 		write("\n\n<a href=\"");

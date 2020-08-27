@@ -5,10 +5,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,6 +25,8 @@ import org.eclipse.jetty.server.session.SessionHandler;
 
 import com.jspa.logging.Log4Init;
 
+import fotok.database.DatabaseAccess;
+import fotok.database.RDupesListenerClient;
 import hu.qgears.commons.NamedThreadFactory;
 import hu.qgears.quickjs.qpage.QPageTypesRegistry;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
@@ -48,7 +49,7 @@ public class Fotok extends AbstractHandler {
 	public static String fImages="/public/image";
 	public static Args clargs;
 	FolderHandler fh;
-	public static RDupes rdupes;
+	public DatabaseAccess da=new DatabaseAccess();
 	public static class Args
 	{
 		@JOHelp("Jetty http server host to bind to.")
@@ -57,6 +58,8 @@ public class Fotok extends AbstractHandler {
 		public File images;
 		@JOHelp("Jetty http server port")
 		public int port=9093;
+		@JOHelp("Folder containing the SQLite database. If does not exist on first start the program creates it but its parent folder must exist.")
+		public File sqlFile=null;
 		@JOHelp("Folder containing the thumbnails. Only redundant data is stored here. Re-generated on demand.")
 		public File thumbsFolder=null;
 		@JOHelp("Folder containing the public access redirects. Read and written by the program.")
@@ -119,20 +122,10 @@ public class Fotok extends AbstractHandler {
 	private void run() throws Exception
 	{
 		Log4Init.init();
-		rdupes=new RDupes();
-		Map<String, Path> l=new TreeMap<>();
-		l.put("fotok", clargs.images.toPath());
-		new Thread("RDUPES") {
-			@Override
-			public void run() {
-				try {
-					rdupes.run(true, l, 1);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}.start();
+		
+		startFilesProcessing();
+		// Map<String, Path> l=new TreeMap<>();
+		// l.put("fotok", clargs.images.toPath());
 		
 		InetSocketAddress sa = new InetSocketAddress(clargs.host, clargs.port);
 		Server server = new Server(sa);
@@ -172,6 +165,13 @@ public class Fotok extends AbstractHandler {
 		sessions.setHandler(clargs.auth);
 		server.start();
 		server.join();
+	}
+
+	private void startFilesProcessing() throws SQLException {
+		da.start();
+		List<Path> l=new ArrayList<>();
+		l.add(clargs.images.toPath());
+		new RDupes().setClient(new RDupesListenerClient(da)).start(1, l);
 	}
 
 	@Override

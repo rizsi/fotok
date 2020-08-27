@@ -102,19 +102,19 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 					}
 				} catch (Exception e) {
 				}
-				String path=thumbsHandler.createThumb(ff.file, size);
-				if(path==null && "html5".equals(baseRequest.getParameter("video")))
+				String thumbPath=thumbsHandler.createThumb(ff.file, size);
+				if(thumbPath==null && "html5".equals(baseRequest.getParameter("video")))
 				{
 					if(!ff.file.getName().endsWith("webm"))
 					{
 						// Not webm file - we convert it into the cache
-						path=thumbsHandler.convertVideo(ff.file);
+						thumbPath=thumbsHandler.convertVideo(ff.file);
 					}
 				}
-				if(path!=null)
+				if(thumbPath!=null)
 				{
-					baseRequest.setPathInfo(path);
-					thumbsHandler.handle(path, baseRequest, request, response);
+					baseRequest.setPathInfo(thumbPath);
+					thumbsHandler.handle(thumbPath, baseRequest, request, response);
 				}else
 				{
 					baseRequest.setPathInfo(target);

@@ -13,6 +13,7 @@ import org.sqlite.JDBC;
 import com.jspa.commons.sql.MultiSQLTemplate;
 import com.jspa.commons.sql.SQLTemplate;
 
+import fotok.Fotok;
 import fotok.formathandler.ExifData;
 import fotok.formathandler.ExiftoolProcessor;
 import fotok.formathandler.FilesProcessor;
@@ -30,6 +31,7 @@ public class DatabaseAccess {
 
 	public static void main(String[] args) throws Exception {
 		Path p=new File("/home/rizsi/tmp/fotok/images").toPath();
+		Fotok.clargs.sqlFile=new File("/home/rizsi/tmp/fotok/db.sqlite");
 		List<Path> initialPath=new ArrayList<>();
 		initialPath.add(p);
 		DatabaseAccess da=new DatabaseAccess();
@@ -50,10 +52,10 @@ public class DatabaseAccess {
 		conn.close();
 	}
 
-	private void start() throws SQLException
+	public void start() throws SQLException
 	{
 		Properties props=new Properties();
-		conn=JDBC.createConnection("jdbc:sqlite:/home/rizsi/tmp/fotok/db.sqlite", props);
+		conn=JDBC.createConnection("jdbc:sqlite:"+Fotok.clargs.sqlFile.getAbsolutePath(), props);
 		new CreateTables(this).execute(conn);
 		conn.setAutoCommit(false);
 	}
