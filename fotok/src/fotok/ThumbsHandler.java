@@ -22,6 +22,7 @@ public class ThumbsHandler extends ResourceHandler {
 
 	@Override
 	public Resource getResource(String path) {
+		// TODO support multiple root folders with different ids
 		String dbPath="0"+path;
 		ESize size=(ESize)Authenticator.tlRequest.get().getAttribute("size");
 		GetProcessedEntryByPath gpebp=new GetProcessedEntryByPath(dbPath);
@@ -33,7 +34,6 @@ public class ThumbsHandler extends ResourceHandler {
 		}
 		if("html5".equals(Authenticator.tlRequest.get().getParameter("video")))
 		{
-			System.out.println("Thumbs Get video resource: "+dbPath+" "+size+" type: "+gpebp.typeName);
 			if("video".equals(gpebp.typeName))
 			{
 				File vid=fotok.da.getVideoFile(gpebp.hash, gpebp.typeName);
@@ -43,7 +43,6 @@ public class ThumbsHandler extends ResourceHandler {
 				}
 			}
 		}
-		System.out.println("Thumbs Get resource: "+dbPath+" "+size+" type: "+gpebp.typeName);
 		if(gpebp.typeName!=null)
 		{
 			// File is processed and we have a result file

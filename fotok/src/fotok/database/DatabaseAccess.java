@@ -13,12 +13,16 @@ import org.sqlite.JDBC;
 import com.jspa.commons.sql.MultiSQLTemplate;
 import com.jspa.commons.sql.SQLTemplate;
 
+import fotok.ERotation;
 import fotok.ESize;
 import fotok.Fotok;
+import fotok.PublicAccessManager;
 import fotok.formathandler.ExifData;
 import fotok.formathandler.ExiftoolProcessor;
 import fotok.formathandler.FilesProcessor;
 import fotok.formathandler.FormatHandler;
+import hu.qgears.commons.UtilFile;
+import hu.qgears.commons.UtilString;
 import hu.qgears.images.SizeInt;
 import rdupes.RDupes;
 import rdupes.RDupesFile;
@@ -29,6 +33,9 @@ public class DatabaseAccess {
 	public int maxPathLength=256;
 	private Connection conn;
 	public final FilesProcessor fp=new FilesProcessor(this);
+	private PublicAccessManager publicAccessManager;
+	// TODO remove
+	private boolean upgradeFromNonDb;
 
 	public static void main(String[] args) throws Exception {
 		Path p=new File("/home/rizsi/tmp/fotok/images").toPath();
@@ -49,6 +56,16 @@ public class DatabaseAccess {
 			da.close();
 		}
 	}
+	public PublicAccessManager getPublicAccessManager() {
+		synchronized (this) {
+			if(publicAccessManager==null)
+			{
+				publicAccessManager=new PublicAccessManager(this);
+			}
+		}
+		return publicAccessManager;
+	}
+
 	private void close() throws SQLException {
 		conn.close();
 	}
@@ -59,16 +76,44 @@ public class DatabaseAccess {
 		conn=JDBC.createConnection("jdbc:sqlite:"+Fotok.clargs.sqlFile.getAbsolutePath(), props);
 		new CreateTables(this).execute(conn);
 		conn.setAutoCommit(false);
+		String version=commit(new GetProperty("version")).value;
+		if(version==null)
+		{
+			upgradeFromPreDatabase();
+			// Upgrade from previous version of the software.
+			commit(new InsertProperty("version", "1"));
+		}
 	}
 
 
+	private void upgradeFromPreDatabase() {
+		upgradeFromNonDb=true;
+		for(File f: UtilFile.listFiles(Fotok.clargs.publicAccessFolder))
+		{
+			if(f.isFile())
+			{
+				String accessSecret=f.getName();
+				try {
+					String fc = UtilFile.loadAsString(f);
+					List<String> lines=UtilString.split(fc, "\r\n");
+					String path=lines.get(0);
+					commit(new InsertPublicAccess(accessSecret, path));
+					f.delete();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 	public boolean isIgnoreFilesAllowed() {
 		return true;
 	}
 
 
-	synchronized public void commit(MultiSQLTemplate sql) throws SQLException {
+	synchronized public <T extends MultiSQLTemplate> T commit(T sql) throws SQLException {
 		SQLTemplate.commit(conn, c->{sql.execute(conn);});
+		return sql;
 	}
 	/**
 	 * A file was found in the storage. Check if we already have a processed entry and create one if not.
@@ -93,6 +138,18 @@ public class DatabaseAccess {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		if(upgradeFromNonDb && ff.file.getFileName().endsWith(".rotation"))
+		{
+			try {
+				ERotation rot=ERotation.valueOf(UtilFile.loadAsString(ff.file.toFile()));
+				String lname=ff.getLocalName();
+				lname=lname.substring(0,lname.length()-".rotation".length());
+				commit(new SetRotationByPath(lname, rot.ordinal()));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	/**

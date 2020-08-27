@@ -1,13 +1,15 @@
 package fotok;
 
 import java.io.File;
-import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import fotok.database.GetRotationByPath;
+import fotok.database.SetRotationByPath;
 import hu.qgears.commons.UtilFile;
 
 public class FotosFile {
@@ -67,14 +69,6 @@ public class FotosFile {
 			File newFile=new File(f.getParentFile(), newName);
 			if(!newFile.exists())
 			{
-				for(ESize size: ESize.values())
-				{
-					File inCache=getCacheFile(size);
-					if(inCache.exists())
-					{
-						UtilFile.deleteRecursive(inCache);
-					}
-				}
 				f.renameTo(newFile);
 				return true;
 			}
@@ -95,57 +89,10 @@ public class FotosFile {
 			{
 				f.delete();
 			}
-			for(ESize size: ESize.values())
-			{
-				File inCache=getCacheFile(size);
-				if(inCache.exists())
-				{
-					UtilFile.deleteRecursive(inCache);
-				}
-			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	/**
-	 * TODO delete resized cached images!
-	 * @param size
-	 * @return
-	 */
-	public File getCacheFile(ESize size) {
-		Path p=getCacheFilePath(size);
-		if(p==null)
-		{
-			return null;
-		}
-		return new File(storage.cache, p.toStringPath());
-	}
-	public File getVideoCacheFile() {
-		Path p=getVideoCacheFilePath();
-		if(p==null)
-		{
-			return null;
-		}
-		return new File(storage.cache, p.toStringPath());
-	}
-	public Path getCacheFilePath(ESize size) {
-		if(size==null)
-		{
-			return null;
-		}
-		Path np=new Path(p);
-		if(!p.folder)
-		{
-			String name=//size+"-"+
-					np.pieces.get(np.pieces.size()-1);
-			np.pieces.set(np.pieces.size()-1, name);
-		}
-		return np;
-	}
-	public Path getVideoCacheFilePath() {
-		Path np=new Path(p);
-		return np;
 	}
 	public static boolean isImage(File f) {
 		String name=f.getName();
@@ -192,32 +139,30 @@ public class FotosFile {
 	public void setRotate(ERotation rotate) {
 		if(isImage(this))
 		{
-			File rf=getRotationFile();
 			try {
-				if(rotate==ERotation.rotation0)
-				{
-					rf.delete();
-				}else
-				{
-					UtilFile.saveAsFile(rf, rotate.name());
-				}
-			} catch (IOException e) {
+				storage.da.commit(new SetRotationByPath(getSystemPath(), rotate.ordinal()));
+			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
 	public ERotation getRotation() {
+		GetRotationByPath grp=new GetRotationByPath(getSystemPath());
 		try {
-			File rf=getRotationFile();
-			if(rf.exists())
-			{
-				return ERotation.valueOf(UtilFile.loadAsString(rf));
-			}
-		} catch (IOException e) {
+			storage.da.commit(grp);
+		} catch (SQLException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
-		return ERotation.rotation0;
+		try {
+			return ERotation.values()[grp.rotateEnumOrdinal];
+		} catch (Exception e) {
+			return ERotation.rotation0;
+		}
+	}
+	private String getSystemPath() {
+		// TODO support multiple root folders
+		return "0/"+p.toStringPath();
 	}
 }

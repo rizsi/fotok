@@ -5,17 +5,20 @@ import java.io.File;
 import org.eclipse.jetty.server.Request;
 
 import fotok.Fotok.Args;
+import fotok.database.DatabaseAccess;
 
 public class FotosStorage {
 	public File images;
 	public File cache;
 	public FotosFolder root;
 	public final Args args;
-	public FotosStorage(Args args, File images, File cache) {
+	public final DatabaseAccess da;
+	public FotosStorage(Args args, File images, File cache, DatabaseAccess da) {
 		super();
 		this.args=args;
 		this.images = images;
 		this.cache = cache;
+		this.da=da;
 		root=new FotosFolder(this, new Path("/")).setRoot(true);
 	}
 	public ResolvedQuery resolve(Path p, Request baseRequest) {

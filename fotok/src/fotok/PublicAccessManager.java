@@ -1,60 +1,50 @@
 package fotok;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import fotok.Fotok.Args;
-import hu.qgears.commons.UtilFile;
-import hu.qgears.commons.UtilString;
+import fotok.database.DatabaseAccess;
+import fotok.database.GetAllPublicAccess;
+import fotok.database.InsertPublicAccess;
+import hu.qgears.commons.Pair;
 
 public class PublicAccessManager {
-	Args args;
+	private DatabaseAccess da;
 	Map<String, String> pathToSecret=new HashMap<>();
 	Map<String, String> secretToPath=new HashMap<>();
 	private final Random random = new SecureRandom();
-	public PublicAccessManager(Args args) {
-		this.args=args;
-		reload();
+	public PublicAccessManager(DatabaseAccess da) {
+		this.da=da;
 	}
 	private void reload()
 	{
 		synchronized (this) {
 			secretToPath.clear();
 			pathToSecret.clear();
-			for(File f: UtilFile.listFiles(args.publicAccessFolder))
+			GetAllPublicAccess gpa=new GetAllPublicAccess();
+			try {
+				da.commit(gpa);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			for(Pair<String, String> p: gpa.accesses)
 			{
-				if(f.isFile())
-				{
-					String accessSecret=f.getName();
-					try {
-						String fc = UtilFile.loadAsString(f);
-						List<String> lines=UtilString.split(fc, "\r\n");
-						String path=lines.get(0);
-						secretToPath.put(accessSecret, path);
-						pathToSecret.put(path, accessSecret);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
+				String accessSecret=p.getA();
+				String path=p.getB();
+				secretToPath.put(accessSecret, path);
+				pathToSecret.put(path, accessSecret);
 			}
 		}
 	}
 	public String getPath(String accessSecret) throws IOException {
-		File f=new File(args.publicAccessFolder, accessSecret);
-		if(f.isFile())
-		{
-			String fc=UtilFile.loadAsString(f);
-			List<String> lines=UtilString.split(fc, "\r\n");
-			String path=lines.get(0);
-			return path;
+		synchronized (this) {
+			return secretToPath.get(accessSecret);
 		}
-		return null;
 	}
 	public void createShare(FotosFolder folder) {
 		String path="/"+folder.p.toStringPath();
@@ -70,10 +60,9 @@ public class PublicAccessManager {
 					ret.append(String.format("%04X", (i>>16)&0xFFFF));
 				}
 				String rnadomName=ret.toString();
-				File f=new File(args.publicAccessFolder, rnadomName);
 				try {
-					UtilFile.saveAsFile(f, path);
-				} catch (IOException e) {
+					da.commit(new InsertPublicAccess(rnadomName, path));
+				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}

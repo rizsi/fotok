@@ -78,7 +78,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	}
 
 	private Object share() {
-		folder.storage.args.getPublicAccessManager().createShare(folder);
+		folder.storage.da.getPublicAccessManager().createShare(folder);
 		updateShares();
 		return null;
 	}
@@ -87,7 +87,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	protected void updateShares() {
 		if(shares!=null)
 		{
-			String p=folder.storage.args.getPublicAccessManager().getShare(folder);
+			String p=folder.storage.da.getPublicAccessManager().getShare(folder);
 			if(p!=null)
 			{
 				shares.innerhtml.setPropertyFromServer("<a href='"+contextPath+"/public/access/"+p+"/'>"+contextPath+"/public/access/"+p+"/</a>");

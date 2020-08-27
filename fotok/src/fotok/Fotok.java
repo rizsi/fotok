@@ -62,7 +62,7 @@ public class Fotok extends AbstractHandler {
 		public File sqlFile=null;
 		@JOHelp("Folder containing the thumbnails. Only redundant data is stored here. Re-generated on demand.")
 		public File thumbsFolder=null;
-		@JOHelp("Folder containing the public access redirects. Read and written by the program.")
+		@JOHelp("Deprecated - public folders are stored in database now. Folder containing the public access redirects. Read and written by the program.")
 		public File publicAccessFolder=null;
 		@JOHelp("The logins configuration file. See code for documentation :-). File is periodically re-read automatically by the program. So configuration can be modified on the fly.")
 		public File loginsConf;
@@ -77,18 +77,8 @@ public class Fotok extends AbstractHandler {
 		@JOHelp("In case of access to not authorized resource Query is redirected to this path.")
 		public String loginPath="/login/";
 		private Authenticator auth;
-		private PublicAccessManager publicAccessManager;
 		public Authenticator getAuth() {
 			return auth;
-		}
-		public PublicAccessManager getPublicAccessManager() {
-			synchronized (this) {
-				if(publicAccessManager==null)
-				{
-					publicAccessManager=new PublicAccessManager(this);
-				}
-			}
-			return publicAccessManager;
 		}
 		volatile private ExecutorService thumbingExecutor;
 		public ExecutorService getThumbingExecutor() {
@@ -108,8 +98,6 @@ public class Fotok extends AbstractHandler {
 
 	public Fotok(Args clargs) {
 		Fotok.clargs=clargs;
-		FotosStorage storage=new FotosStorage(clargs, clargs.images, clargs.thumbsFolder);
-		fh=new FolderHandler(this, storage);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -127,6 +115,10 @@ public class Fotok extends AbstractHandler {
 		Log4Init.init();
 		
 		startFilesProcessing();
+		
+		FotosStorage storage=new FotosStorage(clargs, clargs.images, clargs.thumbsFolder, da);
+		fh=new FolderHandler(this, storage);
+
 		// Map<String, Path> l=new TreeMap<>();
 		// l.put("fotok", clargs.images.toPath());
 		

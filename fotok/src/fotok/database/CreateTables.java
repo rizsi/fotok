@@ -23,6 +23,16 @@ public class CreateTables extends MultiSQLTemplate
 		writeObject(da.maxPathLength);
 		write("),\n\t-- Original date of creation (from image metadata) stored as epoch millis\n\tdate INTEGER,\n\t-- width of image in pixels\n\twidth INTEGER,\n\t-- height of image in pixels\n\theight INTEGER\n\t);\n");
 		executeCreateTable();
+		write("CREATE TABLE IF NOT EXISTS rotate (\n\tmd5sum VARCHAR(32) NOT NULL,\n\trotateEnumOrdinal INTEGER\n\t);\n");
+		executeCreateTable();
+		write("CREATE TABLE IF NOT EXISTS publicAccess (\n\tkey VARCHAR(24) NOT NULL,\n\tpath VARCHAR(");
+		writeObject(da.maxPathLength);
+		write(")\n\t);\n");
+		executeCreateTable();
+		write("CREATE TABLE IF NOT EXISTS properties (\n\tkey VARCHAR(24) NOT NULL,\n\tvalue VARCHAR(");
+		writeObject(da.maxPathLength);
+		write(")\n\t);\n");
+		executeCreateTable();
 	}
 	private void executeCreateTable() throws SQLException {
 		executeAsStatementInt(conn);

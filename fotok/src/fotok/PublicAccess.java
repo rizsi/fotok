@@ -35,7 +35,7 @@ public class PublicAccess extends AbstractHandler {
 		{
 			String accessSecret=pieces.get(0);
 			// System.out.println("public access: "+accessSecret);
-			String path=args.getPublicAccessManager().getPath(accessSecret);
+			String path=fotok.da.getPublicAccessManager().getPath(accessSecret);
 			if(path!=null&&path.length()>0)
 			{
 				// System.out.println("access path: "+path);

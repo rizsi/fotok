@@ -3,7 +3,6 @@ package fotok.database;
 import java.sql.SQLException;
 
 import com.jspa.commons.sql.MultiSQLTemplate;
-import com.jspa.commons.sql.SQLTemplate;
 
 public class GetProcessedEntry extends MultiSQLTemplate
 {
@@ -23,7 +22,7 @@ public class GetProcessedEntry extends MultiSQLTemplate
 		executeAsPreparedStatementResultSet(conn, rs->{
 			while(rs.next())
 			{
-				SQLTemplate.dumpResultSetLine(rs);
+//				SQLTemplate.dumpResultSetLine(rs);
 //				returnMd5Sum=rs.getString(1);
 				n++;
 			}

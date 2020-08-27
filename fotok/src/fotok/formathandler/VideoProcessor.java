@@ -1,4 +1,4 @@
-package fotok;
+package fotok.formathandler;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,9 +15,6 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import fotok.formathandler.CommandLineProcessor;
-import fotok.formathandler.ExiftoolProcessor;
-import fotok.formathandler.FilesProcessor;
 import hu.qgears.commons.Pair;
 import hu.qgears.commons.ProgressCounter;
 import hu.qgears.commons.ProgressCounterSubTask;

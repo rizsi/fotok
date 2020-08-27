@@ -8,7 +8,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fotok.ESize;
 import fotok.Fotok;
-import fotok.VideoProcessor;
 import fotok.database.DatabaseAccess;
 import hu.qgears.commons.ProgressCounter;
 import hu.qgears.commons.ProgressCounter.AbstractProgressCounterHost;
