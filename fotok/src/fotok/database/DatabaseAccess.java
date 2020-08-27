@@ -119,4 +119,7 @@ public class DatabaseAccess {
 	public File getPreviewImage(String hash, String type, ESize size) {
 		return fp.getPreviewImage(hash, type, size);
 	}
+	public File getVideoFile(String hash, String typeName) {
+		return fp.getVideoFile(hash, typeName);
+	}
 }

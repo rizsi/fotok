@@ -78,6 +78,17 @@ public class FilesProcessor {
 			return null;
 		}
 	}
+	public File getVideoFile(String hash, String typeName) {
+		File root=new File(Fotok.clargs.thumbsFolder,typeName);
+		File h=getHashFolder(root, hash);
+		switch (typeName) {
+		case "video":
+			return new File(h, hash+"."+640+".mp4");
+		case "image":
+		default:
+			return null;
+		}
+	}
 	private File getHashFolder(File root, String hash)
 	{
 		// return new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
@@ -97,7 +108,6 @@ public class FilesProcessor {
 							f.getParentFile().mkdirs();
 							if(d.width>maxSize||d.height>maxSize)
 							{
-								System.out.println("Original size: "+d.height+" "+d.height+" to "+maxSize);
 								SizeInt size=thumbSize(d.width, d.height, maxSize);
 								ExifParser.createResizedImage(file, size, f, d.orientation);
 							}else

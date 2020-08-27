@@ -189,7 +189,7 @@ public class VideoProcessor extends CommandLineProcessor
 		double d=100.0/decadesPerImage;
 		addCommandParts("-r", String.format(Locale.US, "%1$,.2f", d));
 		addCommandParts("-vf", "scale="+size.getWidth()+":"+size.getHeight());
-		File thumbsfolder=new File(targetFolder, "thumbparts");
+		File thumbsfolder=new File(targetFolder, baseName+"_thumbparts");
 		thumbsfolder.mkdirs();
 		addCommandParts(thumbsfolder.getAbsolutePath()+"/"+"%03d.jpg");
 		ProcessBuilder pb=new ProcessBuilder(commandParts);

@@ -169,6 +169,18 @@ public class ThumbsHandler extends ResourceHandler {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		if("html5".equals(Authenticator.tlRequest.get().getParameter("video")))
+		{
+			System.out.println("Thumbs Get video resource: "+dbPath+" "+size+" type: "+gpebp.typeName);
+			if("video".equals(gpebp.typeName))
+			{
+				File vid=fotok.da.getVideoFile(gpebp.hash, gpebp.typeName);
+				if(vid!=null)
+				{
+					return new PathResource(vid);
+				}
+			}
+		}
 		System.out.println("Thumbs Get resource: "+dbPath+" "+size+" type: "+gpebp.typeName);
 		if(gpebp.typeName!=null)
 		{
