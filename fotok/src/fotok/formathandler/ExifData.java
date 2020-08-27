@@ -9,6 +9,7 @@ public class ExifData {
 	public int width;
 	public int height;
 	public Date date;
+	public int orientation = 1;
 	@Override
 	public String toString() {
 		return "["+width+"x"+height+"] "+date;

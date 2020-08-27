@@ -32,6 +32,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 	protected void installEditModeButtons(QPage page) {
 	}
 	private Object processFolder() {
+		// TODO remove - processing is automatic now
 		processing.innerhtml.setPropertyFromServer("Finding all files...");
 		new Thread("Process folder")
 		{
@@ -57,12 +58,12 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 				{
 					for(ESize s: ESize.values())
 					{
-						try {
-							th.createThumb(f, s);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+//						try {
+//							// th.createThumb(f, s);
+//						} catch (IOException e) {
+//							// TODO Auto-generated catch block
+//							e.printStackTrace();
+//						}
 					}
 					i++;
 					int ii=i;

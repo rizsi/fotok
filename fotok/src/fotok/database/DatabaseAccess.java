@@ -13,6 +13,7 @@ import org.sqlite.JDBC;
 import com.jspa.commons.sql.MultiSQLTemplate;
 import com.jspa.commons.sql.SQLTemplate;
 
+import fotok.ESize;
 import fotok.Fotok;
 import fotok.formathandler.ExifData;
 import fotok.formathandler.ExiftoolProcessor;
@@ -115,7 +116,7 @@ public class DatabaseAccess {
 			e.printStackTrace();
 		}
 	}
-	public File getPreviewImage(String hash, String type) {
-		return fp.getPreviewImage(hash, type);
+	public File getPreviewImage(String hash, String type, ESize size) {
+		return fp.getPreviewImage(hash, type, size);
 	}
 }

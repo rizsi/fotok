@@ -13,14 +13,14 @@ public enum ESize {
 			return 320;
 		}
 	},
-	/** Not actual image but a file containing the size of the image */
-	size {
-		@Override
-		public int reqSize() {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-	};
-
+//	/** Not actual image but a file containing the size of the image */
+//	size {
+//		@Override
+//		public int reqSize() {
+//			// TODO Auto-generated method stub
+//			return 0;
+//		}
+//	}
+	;
 	abstract public int reqSize();
 }

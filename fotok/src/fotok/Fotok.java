@@ -69,6 +69,9 @@ public class Fotok extends AbstractHandler {
 		@JOHelp("The number of executors executing thumbnail creation. Actual thumbnailing is done by command line tool 'convert' but this number restricts the number of parallel running convert programs.")
 		public int nThumbnailThread=2;
 		@JOSimpleBoolean
+		@JOHelp("Delete the database file - and recreate it on startup. Useful in development.")
+		public boolean deleteDatabase;
+		@JOSimpleBoolean
 		@JOHelp("Debug and demo only feature. All pages are publicly accessibly no login required.")
 		public boolean demoAllPublic;
 		@JOHelp("In case of access to not authorized resource Query is redirected to this path.")
@@ -167,6 +170,10 @@ public class Fotok extends AbstractHandler {
 	}
 
 	private void startFilesProcessing() throws SQLException {
+		if(clargs.deleteDatabase)
+		{
+			clargs.sqlFile.delete();
+		}
 		da.start();
 		List<Path> l=new ArrayList<>();
 		l.add(clargs.images.toPath());

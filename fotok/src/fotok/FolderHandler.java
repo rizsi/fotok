@@ -17,6 +17,11 @@ import hu.qgears.quickjs.qpage.example.QPageHandler;
 import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 import hu.qgears.quickjs.utils.AbstractQPage;
 
+/**
+ * Serves Images Folder listing (array of thumbnails) and also 
+ * serves the resources (raw image, video files, processed resized thumbnails) themselves
+ * through delegated handler.
+ */
 public class FolderHandler extends HtmlTemplate implements IQPageFactory
 {
 	private UploadHandlerDelegate delegate=new UploadHandlerDelegate();
@@ -99,22 +104,23 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 					if(sizeParam!=null)
 					{
 						size=ESize.valueOf(sizeParam);
+						Authenticator.tlRequest.get().setAttribute("size", size);
 					}
 				} catch (Exception e) {
 				}
-				String thumbPath=thumbsHandler.createThumb(ff.file, size);
-				if(thumbPath==null && "html5".equals(baseRequest.getParameter("video")))
+//				String thumbPath=thumbsHandler.getThumbPath(ff.file, size);
+//				if(thumbPath==null && "html5".equals(baseRequest.getParameter("video")))
+//				{
+//					if(!ff.file.getName().endsWith("webm"))
+//					{
+//						// Not webm file - we convert it into the cache
+//						thumbPath=thumbsHandler.convertVideo(ff.file);
+//					}
+//				}
+				if(size!=null)
 				{
-					if(!ff.file.getName().endsWith("webm"))
-					{
-						// Not webm file - we convert it into the cache
-						thumbPath=thumbsHandler.convertVideo(ff.file);
-					}
-				}
-				if(thumbPath!=null)
-				{
-					baseRequest.setPathInfo(thumbPath);
-					thumbsHandler.handle(thumbPath, baseRequest, request, response);
+					baseRequest.setPathInfo(target);
+					thumbsHandler.handle(target, baseRequest, request, response);
 				}else
 				{
 					baseRequest.setPathInfo(target);

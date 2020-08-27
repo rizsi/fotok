@@ -94,10 +94,19 @@ public class ExifParser {
 		} finally {
 			g.dispose();
 		}
+		
 		// ImageIO.write(bi, "jpeg", );
 		writeJPG(metadata, thumb, new File("/tmp/out" + file.getName()));
 	}
-	public void createResizedImage(File file, SizeInt size, File output) throws IOException {
+	/**
+	 * 
+	 * @param file
+	 * @param size
+	 * @param output
+	 * @param exifOrientationOfOriginal 1 means no transformation
+	 * @throws IOException
+	 */
+	public static void createResizedImage(File file, SizeInt size, File output, int exifOrientationOfOriginal) throws IOException {
 		Iterator<?> iterator = ImageIO.getImageReadersBySuffix("jpeg");
 		while (iterator.hasNext()) {
 			ImageReader reader = (ImageReader) iterator.next();
@@ -105,14 +114,78 @@ public class ExifParser {
 				reader.setInput(ImageIO.createImageInputStream(file));
 				IIOMetadata metadata = reader.getImageMetadata(0);
 				BufferedImage bi = reader.read(0);
-				BufferedImage thumb = new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
+				// AffineTransform tx = null;
+				// tx=new AffineTransform();
+				// tx.concatenate(AffineTransform.getRotateInstance(rotationRequired, locationX, locationY));
+				// tx.AffineTransform.getScaleInstance(sx, sy);
+				// AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+
+//				// Drawing the rotated image at the required drawing locations
+//				g2d.drawImage(op.filter(image, null), drawLocationX, drawLocationY, null);
+				BufferedImage thumb;
+				if(exifOrientationOfOriginal>4)
+				{
+					thumb=new BufferedImage(size.getHeight(), size.getWidth(), bi.getType());
+				}else
+				{
+					thumb=new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
+				}
 				Graphics2D g = thumb.createGraphics();
+
 				try {
 					g.drawImage(bi, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
 				} finally {
 					g.dispose();
 				}
-				// ImageIO.write(bi, "jpeg", );
+
+				/**
+				 * 					switch (exifOrientationOfOriginal) {
+					case 1:
+						break;
+					case 2:
+						// = 0 degrees, mirrored: image has been flipped back-to-front.
+						g.drawImage(bi, thumb.getWidth(), 0, 0, thumb.getHeight(), null);
+						break;
+					case 3:
+						// = 180 degrees: image is upside down.
+						g.drawImage(bi, 0, thumb.getHeight(), thumb.getWidth(), 0, null);
+						break;
+					case 4:
+						// = 180 degrees, mirrored: image has been flipped back-to-front and is upside down.
+						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+						break;
+					case 5:
+						// = 90 degrees: image has been flipped back-to-front and is on its side.
+						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+						break;
+					case 6:
+						// = 90 degrees, mirrored: image is on its side.
+					{
+						AffineTransform tx = new AffineTransform();
+						tx.concatenate(AffineTransform.getTranslateInstance(locationX+200, locationY));
+						//tx.concatenate(AffineTransform.getTranslateInstance(-locationX, -locationY));
+						tx.concatenate(AffineTransform.getRotateInstance(Math.PI/2*0.8));
+						tx.concatenate(AffineTransform.getTranslateInstance(-locationX+1800, -locationY));
+						AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+						bi=op.filter(bi, new BufferedImage(bi.getHeight(), bi.getWidth(), bi.getType()));
+						break;
+					}
+					case 7:
+						// = 270 degrees: image has been flipped back-to-front and is on its far side.
+						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+						break;
+					case 8:
+						// = 270 degrees, mirrored: image is on its far side.
+						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+						break;
+
+
+					default:
+						break;
+					}
+
+				 */
+				// ImageIO.write(thumb, "jpeg", output);
 				writeJPG(metadata, thumb, output);
 			} finally {
 				reader.dispose();
@@ -120,7 +193,7 @@ public class ExifParser {
 		}
 	}
 
-	private void writeJPG(IIOMetadata metadata, BufferedImage bi, File file) throws IOException {
+	private static void writeJPG(IIOMetadata metadata, BufferedImage bi, File file) throws IOException {
 		// I'm writing to byte array in memory, but you may use any other stream
 		try (FileOutputStream os = new FileOutputStream(file)) {
 			try (ImageOutputStream ios = ImageIO.createImageOutputStream(os)) {
@@ -151,7 +224,7 @@ public class ExifParser {
 		while (bb.hasRemaining() && goon) {
 			goon = processTag(bb);
 		}
-		if (orientation > 4) {
+		if (exifData.orientation > 4) {
 			int w = exifData.width;
 			exifData.width = exifData.height;
 			exifData.height = w;
@@ -159,7 +232,6 @@ public class ExifParser {
 		return exifData;
 	}
 
-	private int orientation = 1;
 	private ExifData exifData = new ExifData();
 
 	private boolean processTag(ByteBuffer bb) throws IOException {
@@ -276,7 +348,7 @@ public class ExifParser {
 //				System.out.println("Height: "+value);
 				break;
 			case 0x112:
-				orientation = (int) value;
+				exifData.orientation = (int) value;
 				/**
 				 * 1 = The 0th row is at the visual top of the image, and the 0th column is the
 				 * visual left-hand side. 2 = The 0th row is at the visual top of the image, and

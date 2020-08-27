@@ -6,6 +6,7 @@ import java.util.Stack;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import fotok.ESize;
 import fotok.Fotok;
 import fotok.VideoProcessor;
 import fotok.database.DatabaseAccess;
@@ -64,7 +65,7 @@ public class FilesProcessor {
 		processorThread.setDaemon(true);
 		processorThread.start();
 	}
-	public File getPreviewImage(String hash, String type)
+	public File getPreviewImage(String hash, String type, ESize size)
 	{
 		File root=new File(Fotok.clargs.thumbsFolder,type);
 		File h=getHashFolder(root, hash);
@@ -72,14 +73,15 @@ public class FilesProcessor {
 		case "video":
 			return new File(h, hash+".thumbs.jpg");
 		case "image":
-			return new File(h, hash+"."+maxSize+".jpg");
+			return new File(h, hash+"."+size+".jpg");
 		default:
 			return null;
 		}
 	}
 	private File getHashFolder(File root, String hash)
 	{
-		return new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
+		// return new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
+		return root;
 	}
 	public void queueImage(String hash, File file, ExifData d)
 	{
@@ -88,16 +90,20 @@ public class FilesProcessor {
 				@Override
 				public void run() {
 					try {
-						File root=new File(Fotok.clargs.thumbsFolder,"image");
-						File f=new File(getHashFolder(root, hash), hash+"."+maxSize+".jpg");
-						f.getParentFile().mkdirs();
-						if(d.width>maxSize||d.height>maxSize)
-						{
-							SizeInt size=thumbSize(d.width, d.height, maxSize);
-							new ExifParser().createResizedImage(file, size, f);
-						}else
-						{
-							Files.copy(f.toPath(), f.toPath());
+						for (ESize esize: ESize.values()) {
+							int maxSize=esize.reqSize();
+							File root=new File(Fotok.clargs.thumbsFolder,"image");
+							File f=new File(getHashFolder(root, hash), hash+"."+esize+".jpg");
+							f.getParentFile().mkdirs();
+							if(d.width>maxSize||d.height>maxSize)
+							{
+								System.out.println("Original size: "+d.height+" "+d.height+" to "+maxSize);
+								SizeInt size=thumbSize(d.width, d.height, maxSize);
+								ExifParser.createResizedImage(file, size, f, d.orientation);
+							}else
+							{
+								Files.copy(f.toPath(), f.toPath());
+							}
 						}
 						da.imageProcessed(hash, d);
 					} catch (Exception e) {

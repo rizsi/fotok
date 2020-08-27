@@ -28,6 +28,8 @@ public class Authenticator extends AbstractHandler {
 	Args clargs;
 	String prevContent;
 	Logger log=LoggerFactory.getLogger(getClass());
+	public static final ThreadLocal<Request> tlRequest=new ThreadLocal<>();
+
 	enum Mode
 	{
 		ro,
@@ -119,44 +121,51 @@ public class Authenticator extends AbstractHandler {
 	@Override
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-		User user=authenticateUser(baseRequest);
-		List<String> pieces=UtilString.split(target, "/");
-		log.info("Query: "+System.currentTimeMillis()+" "+target);
-		if(pieces.size()>0&&(pieces.get(0).equals("public")))
+		try
 		{
-			delegate.handle(target, baseRequest, request, response);
-		}else
-		{
-			if((user==null||"anon".equals(user.getEmail()))&&!clargs.demoAllPublic)
+			tlRequest.set(baseRequest);
+			User user=authenticateUser(baseRequest);
+			List<String> pieces=UtilString.split(target, "/");
+			log.info("Query: "+System.currentTimeMillis()+" "+target);
+			if(pieces.size()>0&&(pieces.get(0).equals("public")))
 			{
-				response.sendRedirect(UtilHttpContext.getServerUrl(baseRequest)+Fotok.clargs.loginPath+"?url="+UtilHttpContext.getRootURL(baseRequest)+target);
-				baseRequest.setHandled(true);
+				delegate.handle(target, baseRequest, request, response);
 			}else
 			{
-				if(pieces.size()==0)
+				if((user==null||"anon".equals(user.getEmail()))&&!clargs.demoAllPublic)
 				{
-					// Root folder - accessible to all
-					delegate.handle(target, baseRequest, request, response);
-					return;
-				}
-				Mode mode;
-				if(clargs.demoAllPublic)
-				{
-					mode=Mode.rw;
-				}else
-				{
-					mode=getMode(user, target);
-				}
-				if(mode==null)
-				{
-					UtilHttpContext.sendRedirect(baseRequest, response, "/"); 
+					response.sendRedirect(UtilHttpContext.getServerUrl(baseRequest)+Fotok.clargs.loginPath+"?url="+UtilHttpContext.getRootURL(baseRequest)+target);
 					baseRequest.setHandled(true);
 				}else
 				{
-					setAccessMode(baseRequest, mode);
-					delegate.handle(target, baseRequest, request, response);
+					if(pieces.size()==0)
+					{
+						// Root folder - accessible to all
+						delegate.handle(target, baseRequest, request, response);
+						return;
+					}
+					Mode mode;
+					if(clargs.demoAllPublic)
+					{
+						mode=Mode.rw;
+					}else
+					{
+						mode=getMode(user, target);
+					}
+					if(mode==null)
+					{
+						UtilHttpContext.sendRedirect(baseRequest, response, "/"); 
+						baseRequest.setHandled(true);
+					}else
+					{
+						setAccessMode(baseRequest, mode);
+						delegate.handle(target, baseRequest, request, response);
+					}
 				}
 			}
+		}finally
+		{
+			tlRequest.set(null);
 		}
 	}
 	private User authenticateUser(Request baseRequest) {

@@ -25,6 +25,9 @@ import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilFile;
 import hu.qgears.commons.UtilString;
 
+/**
+ * Servers the thumbnail images and other resized versions.
+ */
 public class ThumbsHandler extends ResourceHandler {
 	FotosStorage storage;
 	Fotok fotok;
@@ -35,65 +38,65 @@ public class ThumbsHandler extends ResourceHandler {
 	}
 	private Map<String, Future<Object>> processing=new HashMap<>();
 
-	/**
-	 * Create a resized version of the file and return its path within the thumbs folder.
-	 * @param ff
-	 * @param size
-	 * @return null means the original file must be shown.
-	 * @throws IOException 
-	 */
-	public String createThumb(FotosFile file, ESize size) throws IOException {
-		if(size==null||size==ESize.size)
-		{
-			return null;
-		}
-		File tgFile = file.getFile();
-		File cacheFile = file.getCacheFile(size);
-		if (tgFile.isDirectory()) {
-			return null;
-		}
-		if(cacheFile==null)
-		{
-			return null;
-		}
-		long lastMod=tgFile.lastModified();
-		if (!cacheFile.exists()||cacheFile.lastModified()<lastMod) {
-			if(FotosFile.isImage(cacheFile))
-			{
-				Point imgSize=getSize(file, tgFile, lastMod);
-				if(imgSize!=null)
-				{
-					int maxSize=Math.max(imgSize.x, imgSize.y);
-					if(maxSize<size.reqSize())
-					{
-						// Downscale is not required because original image is small enough
-						return null;
-					}
-					String key=cacheFile.getAbsolutePath();
-					cacheFile.getParentFile().mkdirs();
-					ProcessBuilder pb;
-					switch(size)
-					{
-					case normal:
-						float scale=(float)size.reqSize()/maxSize;
-						int w=(int)(scale*imgSize.x);
-						int h=(int)(scale*imgSize.y);
-						pb = new ProcessBuilder("convert", "-auto-orient", "-resize", ""+w+"x"+h, tgFile.getAbsolutePath(),
-							cacheFile.getAbsolutePath()).redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT);
-						break;
-					case thumb:
-						pb = new ProcessBuilder("convert", "-auto-orient", "-thumbnail", "320x200", tgFile.getAbsolutePath(),
-								cacheFile.getAbsolutePath()).redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT);
-						break;
-					default:
-						throw new IOException("Size not implemented: "+size);
-					}
-					execWithKey(key, fromProcess(pb));
-				}
-			}
-		}
-		return "/"+file.getCacheFilePath(size).toStringPath();
-	}
+//	/**
+//	 * Create a resized version of the file and return its path within the thumbs folder.
+//	 * @param ff
+//	 * @param size
+//	 * @return null means the original file must be shown.
+//	 * @throws IOException 
+//	 */
+//	public String createThumb(FotosFile file, ESize size) throws IOException {
+//		if(size==null||size==ESize.size)
+//		{
+//			return null;
+//		}
+//		File tgFile = file.getFile();
+//		File cacheFile = file.getCacheFile(size);
+//		if (tgFile.isDirectory()) {
+//			return null;
+//		}
+//		if(cacheFile==null)
+//		{
+//			return null;
+//		}
+//		long lastMod=tgFile.lastModified();
+//		if (!cacheFile.exists()||cacheFile.lastModified()<lastMod) {
+//			if(FotosFile.isImage(cacheFile))
+//			{
+//				Point imgSize=getSize(file, tgFile, lastMod);
+//				if(imgSize!=null)
+//				{
+//					int maxSize=Math.max(imgSize.x, imgSize.y);
+//					if(maxSize<size.reqSize())
+//					{
+//						// Downscale is not required because original image is small enough
+//						return null;
+//					}
+//					String key=cacheFile.getAbsolutePath();
+//					cacheFile.getParentFile().mkdirs();
+//					ProcessBuilder pb;
+//					switch(size)
+//					{
+//					case normal:
+//						float scale=(float)size.reqSize()/maxSize;
+//						int w=(int)(scale*imgSize.x);
+//						int h=(int)(scale*imgSize.y);
+//						pb = new ProcessBuilder("convert", "-auto-orient", "-resize", ""+w+"x"+h, tgFile.getAbsolutePath(),
+//							cacheFile.getAbsolutePath()).redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT);
+//						break;
+//					case thumb:
+//						pb = new ProcessBuilder("convert", "-auto-orient", "-thumbnail", "320x200", tgFile.getAbsolutePath(),
+//								cacheFile.getAbsolutePath()).redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT);
+//						break;
+//					default:
+//						throw new IOException("Size not implemented: "+size);
+//					}
+//					execWithKey(key, fromProcess(pb));
+//				}
+//			}
+//		}
+//		return "/"+file.getCacheFilePath(size).toStringPath();
+//	}
 	private Callable<Object> fromProcess(ProcessBuilder pb)
 	{
 		return new Callable<Object>() {
@@ -133,32 +136,32 @@ public class ThumbsHandler extends ResourceHandler {
 		}
 	}
 
-	private Point getSize(FotosFile file, File tgFile, long lastMod) {
-		File sizeFile=file.getCacheFile(ESize.size);
-		if(sizeFile.exists()&&sizeFile.lastModified()>=lastMod)
-		{
-			try {
-				return loadSize(sizeFile);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		sizeFile.getParentFile().mkdirs();
-		String key=sizeFile.getAbsolutePath();
-		ProcessBuilder pb=new ProcessBuilder("identify", "-format", "%wx%h",  tgFile.getAbsolutePath()).redirectOutput(sizeFile);
-		execWithKey(key, fromProcess(pb));
-		try {
-			return loadSize(sizeFile);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
+//	private Point getSize(FotosFile file, File tgFile, long lastMod) {
+//		File sizeFile=file.getCacheFile(ESize.size);
+//		if(sizeFile.exists()&&sizeFile.lastModified()>=lastMod)
+//		{
+//			try {
+//				return loadSize(sizeFile);
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//		sizeFile.getParentFile().mkdirs();
+//		String key=sizeFile.getAbsolutePath();
+//		ProcessBuilder pb=new ProcessBuilder("identify", "-format", "%wx%h",  tgFile.getAbsolutePath()).redirectOutput(sizeFile);
+//		execWithKey(key, fromProcess(pb));
+//		try {
+//			return loadSize(sizeFile);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			return null;
+//		}
+//	}
 	@Override
 	public Resource getResource(String path) {
 		String dbPath="0"+path;
-		System.out.println("Thumbs Get resource: "+dbPath);
+		ESize size=(ESize)Authenticator.tlRequest.get().getAttribute("size");
 		GetProcessedEntryByPath gpebp=new GetProcessedEntryByPath(dbPath);
 		try {
 			fotok.da.commit(gpebp);
@@ -166,10 +169,11 @@ public class ThumbsHandler extends ResourceHandler {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		System.out.println("Thumbs Get resource: "+dbPath+" "+size+" type: "+gpebp.typeName);
 		if(gpebp.typeName!=null)
 		{
 			// File is processed and we have a result file
-			File f=fotok.da.getPreviewImage(gpebp.hash, gpebp.typeName);
+			File f=fotok.da.getPreviewImage(gpebp.hash, gpebp.typeName, size);
 			if(f!=null)
 			{
 				return new PathResource(f);
