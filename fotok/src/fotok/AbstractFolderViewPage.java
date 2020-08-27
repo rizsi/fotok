@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -14,12 +13,9 @@ import org.eclipse.jetty.server.Request;
 
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
-import hu.qgears.commons.ProgressCounter;
-import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
-import hu.qgears.quickjs.qpage.QLabel;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
 import hu.qgears.quickjs.utils.UtilHttpContext;
@@ -30,11 +26,16 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	protected Mode mode;
 	protected String selectedSize="normal";
 	protected String contextPath;
+	// The current active viewer
+	private Viewer viewer;
+	// Initial file that the page was opened with
+	private FotosFile file;
 	ThumbsHandler thumbsHandler;
-	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, ThumbsHandler thumbsHandler) {
+	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
 		this.mode=mode;
 		this.folder=uploadFolder;
 		this.thumbsHandler=thumbsHandler;
+		this.file=file;
 	}
 
 	@Override
@@ -46,6 +47,29 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			public void run() {
 				refresh();
 				updateShares();
+				if(file!=null&&thumbs!=null&&file.getName()!=null)
+				{
+					QThumb thumb=thumbs.get(file.getName());
+					if(thumb!=null)
+					{
+						view(thumb, false);
+					}
+				}
+				page.historyPopState.addListener(e->{
+					System.out.println("Path name: "+e.pathname);
+					if(e.pathname.endsWith("/")&&viewer!=null)
+					{
+						viewer.deleteWindow(null);
+					}else
+					{
+						String filename=e.pathname.substring(e.pathname.lastIndexOf("/")+1);
+						QThumb thumb=thumbs.get(filename);
+						if(thumb!=null)
+						{
+							view(thumb, false);
+						}
+					}
+				});
 			}
 		});
 	}
@@ -53,6 +77,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	public void setRequest(Request baseRequest, HttpServletRequest request) {
 		super.setRequest(baseRequest, request);
 		contextPath=UtilHttpContext.getContext(baseRequest);
+		System.out.println("Target: "+baseRequest.getPathInfo());
 	}
 	abstract protected void installEditModeButtons(QPage page);
 
@@ -102,7 +127,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					{
 						QButton view=new QButton(page, "view-"+f.getName());
 						t.addChild(view);
-						view.clicked.addListener(ev->view(t));
+						view.clicked.addListener(ev->view(t, true));
 					}
 				}
 				prevObject=exists;
@@ -134,9 +159,14 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		QDiv prevImg=null;
 		QDiv nextImg=null;
 		QButton whole;
-		public Viewer(QThumb t) {
+		public Viewer(QThumb t, boolean pushHistory) {
 			super();
 			this.t = t;
+			if(pushHistory)
+			{
+				page.historyPushState(t.f.getName(), t.f.getName());
+			}
+			t.f.getName();
 		}
 
 		public void start() {
@@ -184,8 +214,8 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}
 		}
 
-		private Object deleteWindow(QButton d) {
-			d.dispose();
+		private Object deleteWindow(QButton dummy) {
+			whole.dispose();
 			new InstantJS(page.getCurrentTemplate()) {
 				@Override
 				public void generate() {
@@ -193,6 +223,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				}
 			}.generate();
 			t.scrollIntoView();
+			viewer=null;
 			return null;
 		}
 
@@ -246,7 +277,15 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					{
 						if(preview)
 						{
-							write("VIDEO FILE\n");
+							write("\t<img ");
+							writeObject(imageId==null?"":"id=\""+imageId+"\"");
+							write(" src=\"");
+							writeHtml(f.getName());
+							write("?size=");
+							writeObject(ESize.thumb);
+							write("\" style=\"max-width:100%; max-height:100%; position: relative;\" class=\"center ");
+							writeObject(f.getRotation().getJSClass());
+							write("\"></img>\n");
 						}else
 						{
 							write("<video width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\"controls>\n  <source src=\"");
@@ -267,66 +306,37 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}
 		}
 		private Object next() {
-			return stepTo(t.nextName);
+			return stepTo(t.nextName, true);
 		}
 		private Object prev() {
-			return stepTo(t.prevName);
+			return stepTo(t.prevName, true);
 		}
-		public Object stepTo(String name) {
+		public Object stepTo(String name, boolean pushHistory) {
 			QThumb next=thumbs.get(name);
+			return stepTo(next, pushHistory);
+		}
+		public Object stepTo(QThumb next, boolean pushHistory) {
 			img.dispose();
 			prevImg.dispose();
 			nextImg.dispose();
 			t=next;
+			if(pushHistory)
+			{
+				page.historyPushState(t.f.getName(), t.f.getName());
+			}
 			generateViews();
 			return null;
 		}
-
 	}
 
-	private Object view(QThumb t) {
-		if(FotosFile.isVideo(t.f))
+	private Object view(QThumb t, boolean pushHistory) {
+		if(viewer==null)
 		{
-			QLabel waitConvert=new QLabel(page);
-			new DomCreator() {
-				@Override
-				public void generateDom() {
-					write("<div id=\"");
-					writeObject(waitConvert.getId());
-					write("\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n</div>\n");
-				}
-			}.initialize(page, "documentBody");
-			new Thread()
-			{
-				public void run()
-				{
-					ProgressCounter pc=new ProgressCounter(new ProgressCounter.AbstractProgressCounterHost() {
-						@Override
-						public void progressStatusUpdate(Stack<ProgressCounterSubTask> tasks) {
-							String s=""+tasks;
-							page.submitToUI(()->{
-								waitConvert.innerhtml.setPropertyFromServer(""+s);
-							});
-						}
-					}, "Convert video");
-					pc.setCurrent();
-					try
-					{
-						thumbsHandler.convertVideo(t.f);
-					}finally
-					{
-						pc.close();
-					}
-					page.submitToUI(()->{
-						waitConvert.dispose();
-						new Viewer(t).start();
-					});
-				}
-			}
-			.start();
+			viewer=new Viewer(t, pushHistory);
+			viewer.start();
 		}else
 		{
-			new Viewer(t).start();
+			viewer.stepTo(t, pushHistory);
 		}
 		return null;
 	}

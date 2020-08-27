@@ -102,6 +102,10 @@ public class FilesProcessor {
 				public void run() {
 					try {
 						for (ESize esize: ESize.values()) {
+							if(esize==ESize.original)
+							{
+								continue;
+							}
 							int maxSize=esize.reqSize();
 							File root=new File(Fotok.clargs.thumbsFolder,"image");
 							File f=new File(getHashFolder(root, hash), hash+"."+esize+".jpg");

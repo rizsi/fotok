@@ -24,6 +24,7 @@ public class FotosFile {
 		knowVideoExtensions.add("mts");
 		knowVideoExtensions.add("mov");
 		knowVideoExtensions.add("webm");
+		knowVideoExtensions.add("mp4");
 	}
 	
 	public FotosFile(FotosStorage storage, Path p) {

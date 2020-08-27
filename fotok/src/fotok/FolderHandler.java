@@ -70,16 +70,45 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		try
 		{
 			baseRequest.setPathInfo(ff.subPath);
+			String sizeParam=baseRequest.getParameter("size");
+			String videoParam=baseRequest.getParameter("video");
+			ESize size=null;
+			try {
+				if(sizeParam!=null)
+				{
+					size=ESize.valueOf(sizeParam);
+					Authenticator.tlRequest.get().setAttribute("size", size);
+				}
+			} catch (Exception e) {
+			}
 			if(Mode.rw.equals(ff.mode)&&delegate.handle(ff.folder.getImagesFolder(), baseRequest, response, false))
 			{
+				// Upload delegate access in case of RW mode of folder
 				return;
-			}else if("/".equals(ff.subPath))
+			} else if ("all".equals(baseRequest.getParameter("download")))
 			{
-//				if("true".equals(baseRequest.getParameter("video")))
-//				{
-//					new VideoHandler().handle(target, baseRequest, request, response);
-//					return;
-//				}
+					System.out.println("Download all!");
+					new FolderAsZipHandler(ff.folder.getFile()).handle(target, baseRequest, request, response);
+					return;
+			} else if ("html5".equals(videoParam))
+			{
+				// Handle video file
+				baseRequest.setPathInfo(target);
+				thumbsHandler.handle(target, baseRequest, request, response);
+			} else if (size!=null)
+			{
+				// Handle image file - resized or original size
+				if(size!=ESize.original)
+				{
+					baseRequest.setPathInfo(target);
+					thumbsHandler.handle(target, baseRequest, request, response);
+				}else
+				{
+					baseRequest.setPathInfo(target);
+					filesHandler.handle(target, baseRequest, request, response);
+				}
+			}else
+			{
 				if(ff.folder.exists())
 				{
 					dQPage.handle(ff.subPath, baseRequest, request, response, ff);
@@ -89,39 +118,6 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 					{
 						createFolderPage.handle(ff.subPath, baseRequest, request, response, ff);
 					}
-				}
-			}else
-			{
-				if("all".equals(baseRequest.getParameter("download")))
-				{
-					System.out.println("Download all!");
-					new FolderAsZipHandler(ff.folder.getFile()).handle(target, baseRequest, request, response);
-					return;
-				}
-				ESize size=null;
-				try {
-					String sizeParam=baseRequest.getParameter("size");
-					if(sizeParam!=null)
-					{
-						size=ESize.valueOf(sizeParam);
-						Authenticator.tlRequest.get().setAttribute("size", size);
-					}
-				} catch (Exception e) {
-				}
-//				String thumbPath=thumbsHandler.getThumbPath(ff.file, size);
-				if(size==null && "html5".equals(baseRequest.getParameter("video")))
-				{
-					baseRequest.setPathInfo(target);
-					thumbsHandler.handle(target, baseRequest, request, response);
-				}
-				if(size!=null)
-				{
-					baseRequest.setPathInfo(target);
-					thumbsHandler.handle(target, baseRequest, request, response);
-				}else
-				{
-					baseRequest.setPathInfo(target);
-					filesHandler.handle(target, baseRequest, request, response);
 				}
 			}
 		}finally
@@ -135,10 +131,10 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		ResolvedQuery ff=(ResolvedQuery) request;
 		if(ff.mode==Mode.rw && ff.isEditModeAsked())
 		{
-			return new FolderViewPageRW(ff.mode, ff.folder, delegate, thumbsHandler);
+			return new FolderViewPageRW(ff.mode, ff.folder, ff.file, delegate, thumbsHandler);
 		}else
 		{
-			return new FolderViewPageReadOnly(ff.mode, ff.folder, thumbsHandler);
+			return new FolderViewPageReadOnly(ff.mode, ff.folder, ff.file, thumbsHandler);
 		}
 	}
 

@@ -1,14 +1,11 @@
 package fotok;
 
-import java.io.IOException;
 import java.util.Stack;
-import java.util.TimerTask;
 
 import fotok.Authenticator.Mode;
 import hu.qgears.commons.ProgressCounter;
 import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilEventListener;
-import hu.qgears.commons.UtilTimer;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QLabel;
@@ -19,8 +16,8 @@ import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 public class FolderViewPageRW extends AbstractFolderViewPage {
 	QLabel shares;
 	QLabel processing;
-	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, UploadHandlerDelegate delegate, ThumbsHandler thumbsHandler) {
-		super(mode, uploadFolder, thumbsHandler);
+	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, FotosFile file, UploadHandlerDelegate delegate, ThumbsHandler thumbsHandler) {
+		super(mode, uploadFolder, file, thumbsHandler);
 		this.thumbsHandler=thumbsHandler;
 		if(mode!=Mode.rw)
 		{
@@ -227,6 +224,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 				refresh();
 			}
 		});
+		// TODO remove transcode option from UI
 		QButton transcode=new QButton(page, "button-transcode");
 		transcode.clicked.addListener(e->{
 			new Thread()
@@ -245,16 +243,6 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 							}
 							, "transcode all videos in folder");
 					pc.setCurrent();
-					try
-					{
-						thumbsHandler.convertAll(folder);
-					}finally
-					{
-						pc.close();
-					}
-					page.submitToUI(()->{
-						processing.innerhtml.setPropertyFromServer("Transcode Finshed");
-					});
 				}
 			}
 			.start();

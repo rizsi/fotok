@@ -13,6 +13,15 @@ public enum ESize {
 			return 320;
 		}
 	},
+	/**
+	 * Get the image/video in its original format.
+	 */
+	original {
+		@Override
+		public int reqSize() {
+			return -1;
+		}
+	},
 //	/** Not actual image but a file containing the size of the image */
 //	size {
 //		@Override
