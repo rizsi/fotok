@@ -39,7 +39,7 @@ public class FolderPreview extends HtmlTemplate{
 				String path=c.getRelativePath(home);
 				String imageId="preview-"+(thumbs?"thumb":"normal")+path;
 				String refPath=path+(thumbs?"?size=thumb":"size=normal");
-				ret.add(new ImageLoaderLauncher(imageId, refPath));
+				ret.add(new ImageLoaderLauncher(imageId, refPath, 3));
 				write("<rect x=\"");
 				writeObject(x-1);
 				write("%\" y=\"");

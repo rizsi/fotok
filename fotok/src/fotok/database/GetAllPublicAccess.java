@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jspa.commons.sql.MultiSQLTemplate;
+import com.jspa.commons.sql.SQLTemplate;
 
 import hu.qgears.commons.Pair;
 
@@ -21,6 +22,7 @@ public class GetAllPublicAccess extends MultiSQLTemplate
 		executeAsPreparedStatementResultSet(conn, rs->{
 			while(rs.next())
 			{
+				SQLTemplate.dumpResultSetLine(rs);
 				accesses.add(new Pair<String, String>(rs.getString(1), rs.getString(2)));
 			}
 		});

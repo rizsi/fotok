@@ -2,7 +2,8 @@ package fotok;
 
 import java.util.Enumeration;
 
-public class DebugHttpPage extends SimpleHttpPage{
+public class DebugHttpPage extends SimpleHttpPage
+{
 
 	@Override
 	protected void writeBody() {
@@ -20,5 +21,14 @@ public class DebugHttpPage extends SimpleHttpPage{
 				write("</br>\n");
 			}
 		}
+		Fotok f=Authenticator.tlFotok.get();
+		write("Images queue length: ");
+		writeObject(f.da.fp.imageTasks.size());
+		write("</br>\nVideos queue length: ");
+		writeObject(f.da.fp.videoTasks.size());
+		write("</br>\nProcessed counter: ");
+		writeObject(f.da.fp.processedCounter);
+		write("</br>\n");
+		;
 	}
 }

@@ -27,8 +27,10 @@ public class Authenticator extends AbstractHandler {
 	AbstractHandler delegate;
 	Args clargs;
 	String prevContent;
+	Fotok fotok;
 	Logger log=LoggerFactory.getLogger(getClass());
 	public static final ThreadLocal<Request> tlRequest=new ThreadLocal<>();
+	public static final ThreadLocal<Fotok> tlFotok=new ThreadLocal<>();
 
 	enum Mode
 	{
@@ -56,7 +58,8 @@ public class Authenticator extends AbstractHandler {
 	}
 	private List<Access> accessList=new ArrayList<>();
 
-	public Authenticator(AbstractHandler delegate, Args clargs) {
+	public Authenticator(Fotok fotok, AbstractHandler delegate, Args clargs) {
+		this.fotok=fotok;
 		this.delegate=delegate;
 		this.clargs = clargs;
 		if(clargs.demoAllPublic)
@@ -124,6 +127,7 @@ public class Authenticator extends AbstractHandler {
 		try
 		{
 			tlRequest.set(baseRequest);
+			tlFotok.set(fotok);
 			User user=authenticateUser(baseRequest);
 			List<String> pieces=UtilString.split(target, "/");
 			log.info("Query: "+System.currentTimeMillis()+" "+target);
@@ -166,6 +170,7 @@ public class Authenticator extends AbstractHandler {
 		}finally
 		{
 			tlRequest.set(null);
+			tlFotok.set(null);
 		}
 	}
 	private User authenticateUser(Request baseRequest) {

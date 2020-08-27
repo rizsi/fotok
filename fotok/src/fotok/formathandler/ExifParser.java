@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 
 import javax.imageio.IIOImage;
@@ -25,6 +26,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.stream.ImageOutputStream;
 
+import hu.qgears.commons.Pair;
 import hu.qgears.images.SizeInt;
 
 /**
@@ -106,7 +108,7 @@ public class ExifParser {
 	 * @param exifOrientationOfOriginal 1 means no transformation
 	 * @throws IOException
 	 */
-	public static void createResizedImage(File file, SizeInt size, File output, int exifOrientationOfOriginal) throws IOException {
+	public static void createResizedImages(File file, List<Pair<File, SizeInt>> sizes, int exifOrientationOfOriginal) throws IOException {
 		Iterator<?> iterator = ImageIO.getImageReadersBySuffix("jpeg");
 		while (iterator.hasNext()) {
 			ImageReader reader = (ImageReader) iterator.next();
@@ -114,79 +116,84 @@ public class ExifParser {
 				reader.setInput(ImageIO.createImageInputStream(file));
 				IIOMetadata metadata = reader.getImageMetadata(0);
 				BufferedImage bi = reader.read(0);
-				// AffineTransform tx = null;
-				// tx=new AffineTransform();
-				// tx.concatenate(AffineTransform.getRotateInstance(rotationRequired, locationX, locationY));
-				// tx.AffineTransform.getScaleInstance(sx, sy);
-				// AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-
-//				// Drawing the rotated image at the required drawing locations
-//				g2d.drawImage(op.filter(image, null), drawLocationX, drawLocationY, null);
-				BufferedImage thumb;
-				if(exifOrientationOfOriginal>4)
+				for(Pair<File, SizeInt> s: sizes)
 				{
-					thumb=new BufferedImage(size.getHeight(), size.getWidth(), bi.getType());
-				}else
-				{
-					thumb=new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
-				}
-				Graphics2D g = thumb.createGraphics();
-
-				try {
-					g.drawImage(bi, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
-				} finally {
-					g.dispose();
-				}
-
-				/**
-				 * 					switch (exifOrientationOfOriginal) {
-					case 1:
-						break;
-					case 2:
-						// = 0 degrees, mirrored: image has been flipped back-to-front.
-						g.drawImage(bi, thumb.getWidth(), 0, 0, thumb.getHeight(), null);
-						break;
-					case 3:
-						// = 180 degrees: image is upside down.
-						g.drawImage(bi, 0, thumb.getHeight(), thumb.getWidth(), 0, null);
-						break;
-					case 4:
-						// = 180 degrees, mirrored: image has been flipped back-to-front and is upside down.
-						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
-						break;
-					case 5:
-						// = 90 degrees: image has been flipped back-to-front and is on its side.
-						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
-						break;
-					case 6:
-						// = 90 degrees, mirrored: image is on its side.
+					SizeInt size=s.getB();
+					File output=s.getA();
+					// AffineTransform tx = null;
+					// tx=new AffineTransform();
+					// tx.concatenate(AffineTransform.getRotateInstance(rotationRequired, locationX, locationY));
+					// tx.AffineTransform.getScaleInstance(sx, sy);
+					// AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+	
+	//				// Drawing the rotated image at the required drawing locations
+	//				g2d.drawImage(op.filter(image, null), drawLocationX, drawLocationY, null);
+					BufferedImage thumb;
+					if(exifOrientationOfOriginal>4)
 					{
-						AffineTransform tx = new AffineTransform();
-						tx.concatenate(AffineTransform.getTranslateInstance(locationX+200, locationY));
-						//tx.concatenate(AffineTransform.getTranslateInstance(-locationX, -locationY));
-						tx.concatenate(AffineTransform.getRotateInstance(Math.PI/2*0.8));
-						tx.concatenate(AffineTransform.getTranslateInstance(-locationX+1800, -locationY));
-						AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-						bi=op.filter(bi, new BufferedImage(bi.getHeight(), bi.getWidth(), bi.getType()));
-						break;
+						thumb=new BufferedImage(size.getHeight(), size.getWidth(), bi.getType());
+					}else
+					{
+						thumb=new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
 					}
-					case 7:
-						// = 270 degrees: image has been flipped back-to-front and is on its far side.
-						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
-						break;
-					case 8:
-						// = 270 degrees, mirrored: image is on its far side.
-						g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
-						break;
-
-
-					default:
-						break;
+					Graphics2D g = thumb.createGraphics();
+	
+					try {
+						g.drawImage(bi, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
+					} finally {
+						g.dispose();
 					}
-
-				 */
-				// ImageIO.write(thumb, "jpeg", output);
-				writeJPG(metadata, thumb, output);
+	
+					/**
+					 * 					switch (exifOrientationOfOriginal) {
+						case 1:
+							break;
+						case 2:
+							// = 0 degrees, mirrored: image has been flipped back-to-front.
+							g.drawImage(bi, thumb.getWidth(), 0, 0, thumb.getHeight(), null);
+							break;
+						case 3:
+							// = 180 degrees: image is upside down.
+							g.drawImage(bi, 0, thumb.getHeight(), thumb.getWidth(), 0, null);
+							break;
+						case 4:
+							// = 180 degrees, mirrored: image has been flipped back-to-front and is upside down.
+							g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+							break;
+						case 5:
+							// = 90 degrees: image has been flipped back-to-front and is on its side.
+							g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+							break;
+						case 6:
+							// = 90 degrees, mirrored: image is on its side.
+						{
+							AffineTransform tx = new AffineTransform();
+							tx.concatenate(AffineTransform.getTranslateInstance(locationX+200, locationY));
+							//tx.concatenate(AffineTransform.getTranslateInstance(-locationX, -locationY));
+							tx.concatenate(AffineTransform.getRotateInstance(Math.PI/2*0.8));
+							tx.concatenate(AffineTransform.getTranslateInstance(-locationX+1800, -locationY));
+							AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+							bi=op.filter(bi, new BufferedImage(bi.getHeight(), bi.getWidth(), bi.getType()));
+							break;
+						}
+						case 7:
+							// = 270 degrees: image has been flipped back-to-front and is on its far side.
+							g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+							break;
+						case 8:
+							// = 270 degrees, mirrored: image is on its far side.
+							g.drawImage(bi, thumb.getWidth(), thumb.getHeight(), 0, 0, null);
+							break;
+	
+	
+						default:
+							break;
+						}
+	
+					 */
+					// ImageIO.write(thumb, "jpeg", output);
+					writeJPG(metadata, thumb, output);
+				}
 			} finally {
 				reader.dispose();
 			}

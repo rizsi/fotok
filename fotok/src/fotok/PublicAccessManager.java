@@ -19,6 +19,7 @@ public class PublicAccessManager {
 	private final Random random = new SecureRandom();
 	public PublicAccessManager(DatabaseAccess da) {
 		this.da=da;
+		reload();
 	}
 	private void reload()
 	{

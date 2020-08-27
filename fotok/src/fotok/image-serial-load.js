@@ -22,6 +22,7 @@ class ImageSerialLoad
 	startLoad(img, src)
 	{
 		img.addEventListener("load", this.loaded.bind(this), false);
+		img.addEventListener("error", this.error.bind(this), false);
 		if(img.nodeName=="image")
 		{
 			// image within SVG graphics
@@ -37,6 +38,12 @@ class ImageSerialLoad
 	{
 		this.nAvailableThread++;
 		// console.info("Image loaded! "+ev.target.id+" "+this.nAvailableThread);
+		this.startWaiting();
+	}
+	error(ev)
+	{
+		this.nAvailableThread++;
+		// console.info("Image load ERROR! "+ev.target.id+" "+this.nAvailableThread);
 		this.startWaiting();
 	}
 	startWaiting()

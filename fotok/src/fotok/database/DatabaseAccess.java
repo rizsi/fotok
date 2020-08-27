@@ -83,6 +83,10 @@ public class DatabaseAccess {
 			// Upgrade from previous version of the software.
 			commit(new InsertProperty("version", "1"));
 		}
+		if(Fotok.clargs.clearCache)
+		{
+			commit(new ClearCache());
+		}
 	}
 
 

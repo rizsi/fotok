@@ -23,10 +23,10 @@ public class FormatHandler extends CommandLineProcessor
 	public void run() throws IOException {
 		try {
 			ExifData d=new ExifParser().parseFile(file, null);
-			System.out.println("JPEG: "+hash+" "+file.getAbsoluteFile()+" "+d.width+" "+d.height+" "+d.date);
+			// System.out.println("JPEG: "+hash+" "+file.getAbsoluteFile()+" "+d.width+" "+d.height+" "+d.date);
 			da.fp.queueImage(hash, file, d);
 			return;
-		}catch(IOException ioex)
+		}catch(Exception ioex)
 		{
 			// Ignore - file may not be an image...
 		}
@@ -35,9 +35,9 @@ public class FormatHandler extends CommandLineProcessor
 		Process p=pb.start();
 		ExiftoolProcessor etp=new ExiftoolProcessor();
 		processLines(p.getInputStream(), etp);
-		if(etp.mimeType.startsWith("video/"))
+		if(etp.mimeType!=null && etp.mimeType.startsWith("video/"))
 		{
-			System.out.println("VIDEO: "+hash+" "+file.getAbsoluteFile()+" "+etp.date);
+			// System.out.println("VIDEO: "+hash+" "+file.getAbsoluteFile()+" "+etp.date);
 			da.fp.queueVideo(hash, file, etp);
 		}
 	}

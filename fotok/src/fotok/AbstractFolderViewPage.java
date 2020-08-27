@@ -170,6 +170,9 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 		public void start() {
 			whole=new QButton(page, "viewer");
+			whole.rightClicked.addListener(e->{
+				rotate.setStyle("hidden", false);
+			});
 			rotate=new QButton(whole, "viewer-image-rotate");
 			rotate.clicked.addListener(e->{rotate();});
 			new DomCreator() {
@@ -177,7 +180,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				public void generateDom() {
 					write("<div id=\"viewer\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%; overflow:hidden;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%; overflow:hidden;\"></button>\n<button id=\"");
 					writeHtml(rotate.getId());
-					write("\" style=\"position: absolute; z-index:1; left:50%; top:10%; width=10%;\">Rotate</button>\n</div>\n");
+					write("\" class=\"hidden\" style=\"position: absolute; z-index:1; left:50%; top:10%; width=10%;\">Rotate</button>\n</div>\n");
 				}
 			}.initialize(page, "documentBody");
 			// img.src.setPropertyFromServer(t.f.getName());
@@ -314,18 +317,18 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		private Object prev() {
 			return stepTo(t.prevName, true);
 		}
-		public Object stepTo(String name, boolean pushHistory) {
+		public Object stepTo(String name, boolean replaceState) {
 			QThumb next=thumbs.get(name);
-			return stepTo(next, pushHistory);
+			return stepTo(next, replaceState);
 		}
-		public Object stepTo(QThumb next, boolean pushHistory) {
+		public Object stepTo(QThumb next, boolean replaceState) {
 			img.dispose();
 			prevImg.dispose();
 			nextImg.dispose();
 			t=next;
-			if(pushHistory)
+			if(replaceState)
 			{
-				page.historyPushState(t.f.getName(), t.f.getName());
+				page.historyReplaceState(t.f.getName(), t.f.getName());
 			}
 			generateViews();
 			return null;
@@ -366,11 +369,9 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		writeHtml(contextPath+Fotok.fScripts);
 		write("/image-serial-load.js\"></script>\n");
 		additionalHeaders();
-		write("<script type=\"text/javascript\">\nglobalImageSerialLoad=new ImageSerialLoad(");
-		writeObject(folder.storage.args.nThumbnailThread);
-		write(");\nwindow.onload=function()\n{\n");
+		write("<script type=\"text/javascript\">\nglobalImageSerialLoad=new ImageSerialLoad(1);\nwindow.onload=function()\n{\n");
 		generateUploadInitializer();
-		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\n.thumb-area {\n\twidth:100%;\n\theight:100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\nimg.rotate-90\n{\n\ttransform: rotate(90deg);\n}\nimg.rotate-180\n{\n\ttransform: rotate(180deg);\n}\nimg.rotate-270\n{\n\ttransform: rotate(270deg);\n}\ndiv.center\n{\n\ttext-align: center;\n}\n</style>\n");
+		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\n.thumb-area {\n\twidth:100%;\n\theight:100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\nimg.rotate-90\n{\n\ttransform: rotate(90deg);\n}\nimg.rotate-180\n{\n\ttransform: rotate(180deg);\n}\nimg.rotate-270\n{\n\ttransform: rotate(270deg);\n}\ndiv.center\n{\n\ttext-align: center;\n}\n.hidden\n{\n\tdisplay: none;\n}\n</style>\n");
 	}
 	
 	abstract protected void additionalHeaders();

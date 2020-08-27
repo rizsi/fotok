@@ -8,8 +8,6 @@ import java.security.SecureRandom;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +25,6 @@ import com.jspa.logging.Log4Init;
 
 import fotok.database.DatabaseAccess;
 import fotok.database.RDupesListenerClient;
-import hu.qgears.commons.NamedThreadFactory;
 import hu.qgears.quickjs.qpage.QPageTypesRegistry;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
 import hu.qgears.quickjs.utils.DispatchHandler;
@@ -66,11 +63,12 @@ public class Fotok extends AbstractHandler {
 		public File publicAccessFolder=null;
 		@JOHelp("The logins configuration file. See code for documentation :-). File is periodically re-read automatically by the program. So configuration can be modified on the fly.")
 		public File loginsConf;
-		@JOHelp("The number of executors executing thumbnail creation. Actual thumbnailing is done by command line tool 'convert' but this number restricts the number of parallel running convert programs.")
-		public int nThumbnailThread=2;
 		@JOSimpleBoolean
 		@JOHelp("Delete the database file - and recreate it on startup. Useful in development.")
 		public boolean deleteDatabase;
+		@JOSimpleBoolean
+		@JOHelp("Clear the cache - and recreate it on startup. Useful in development.")
+		public boolean clearCache;
 		@JOSimpleBoolean
 		@JOHelp("Debug and demo only feature. All pages are publicly accessibly no login required.")
 		public boolean demoAllPublic;
@@ -79,16 +77,6 @@ public class Fotok extends AbstractHandler {
 		private Authenticator auth;
 		public Authenticator getAuth() {
 			return auth;
-		}
-		volatile private ExecutorService thumbingExecutor;
-		public ExecutorService getThumbingExecutor() {
-			synchronized (this) {
-				if(thumbingExecutor==null)
-				{
-					thumbingExecutor=Executors.newFixedThreadPool(nThumbnailThread,new NamedThreadFactory("thumbnail-gen").setDaemon(true));
-				}
-			}
-			return thumbingExecutor;
 		}
 		public int getMaxChunkSize() {
 			// Safe max chunk size
@@ -154,8 +142,8 @@ public class Fotok extends AbstractHandler {
 		h.addHandler(fImages, new SvgHandler());
 		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
 		h.addHandler("/public/access/", new PublicAccess(clargs, this));
-		h.addHandler("/debug", new DebugHttpPage().createHandler());
-		clargs.auth=new Authenticator(h, clargs);
+		h.addHandler("/","/debug", new DebugHttpPage().createHandler());
+		clargs.auth=new Authenticator(this, h, clargs);
 		sessions.setHandler(clargs.auth);
 		server.start();
 		server.join();

@@ -9,3 +9,12 @@ Required hearders:
  * X-Forwarded-Proto X-Forwarded-Server X-Forwarded-Port : used to reconstruct server (https://example.com:xxx/)
  * X-Forwarded-Context: The "folder" in which the application is hosted. Must not end with '/'. Root is "", test/ is "test", etc.
 
+== TODOS
+
+ * When processing was started but not finished and the server is stopped then processing will not restart.
+ * Possible to set video size
+ * Possible to adjust image resolution to the client monitor resolution
+ * Better image view UI
+ ** Hide rotate button
+ ** Use touch swipe to go to next image
+ ** Back button on phone exits the image viewer (but still URL is updated)

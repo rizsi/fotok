@@ -48,7 +48,7 @@ public class QThumb extends QComponent {
 			{
 				thumbId="img-thumb-"+f.getName();
 				String ref=f.getName()+"?size=thumb";
-				imagesToLoad.add(new ImageLoaderLauncher(thumbId, ref));
+				imagesToLoad.add(new ImageLoaderLauncher(thumbId, ref, 2));
 				write("<img id=\"");
 				writeHtml(thumbId);
 				write("\" src=\"");

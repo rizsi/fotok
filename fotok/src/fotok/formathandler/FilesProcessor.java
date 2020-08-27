@@ -2,6 +2,8 @@ package fotok.formathandler;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -9,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import fotok.ESize;
 import fotok.Fotok;
 import fotok.database.DatabaseAccess;
+import hu.qgears.commons.Pair;
 import hu.qgears.commons.ProgressCounter;
 import hu.qgears.commons.ProgressCounter.AbstractProgressCounterHost;
 import hu.qgears.commons.ProgressCounterSubTask;
@@ -21,8 +24,9 @@ import hu.qgears.images.SizeInt;
 public class FilesProcessor {
 	private DatabaseAccess da;
 	private Object syncObject=new Object();
-	LinkedBlockingQueue<Runnable> imageTasks=new LinkedBlockingQueue<>();
-	LinkedBlockingQueue<Runnable> videoTasks=new LinkedBlockingQueue<>();
+	public LinkedBlockingQueue<Runnable> imageTasks=new LinkedBlockingQueue<>();
+	public LinkedBlockingQueue<Runnable> videoTasks=new LinkedBlockingQueue<>();
+	public volatile int processedCounter;
 	public static final int maxSize=320;
 	private Thread processorThread=new Thread("Image/video processor")
 	{
@@ -54,6 +58,7 @@ public class FilesProcessor {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					processedCounter++;
 				}
 			}
 		};
@@ -100,6 +105,7 @@ public class FilesProcessor {
 				@Override
 				public void run() {
 					try {
+						List<Pair<File, SizeInt>> sizes=new ArrayList<>();
 						for (ESize esize: ESize.values()) {
 							if(esize==ESize.original)
 							{
@@ -112,12 +118,14 @@ public class FilesProcessor {
 							if(d.width>maxSize||d.height>maxSize)
 							{
 								SizeInt size=thumbSize(d.width, d.height, maxSize);
-								ExifParser.createResizedImage(file, size, f, d.orientation);
+								sizes.add(new Pair<File, SizeInt>(f, size));
 							}else
 							{
 								Files.copy(f.toPath(), f.toPath());
 							}
 						}
+						ExifParser.createResizedImages(file, sizes, d.orientation);
+						System.out.println("Image file processed: "+file.getAbsolutePath());
 						da.imageProcessed(hash, d);
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
@@ -158,6 +166,7 @@ public class FilesProcessor {
 								}, "transcode video");
 								pc.setCurrent();
 								vp.run(12, thumbSize(etp.width, etp.height, maxSize));
+								System.out.println("Video file processed: "+file.getAbsolutePath());
 								da.videoProcessed(hash, etp);
 							} catch (Exception e) {
 								// TODO Auto-generated catch block
@@ -168,6 +177,6 @@ public class FilesProcessor {
 					syncObject.notifyAll();
 				}
 			}
-		}, 1000);
+		}, 5000);
 	}
 }
