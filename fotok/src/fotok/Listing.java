@@ -12,6 +12,10 @@ import hu.qgears.commons.UtilFile;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
 import hu.qgears.quickjs.utils.UtilHttpContext;
+import rdupes.RDupes;
+import rdupes.RDupesFile;
+import rdupes.RDupesObject;
+import rdupes.RDupesPath;
 
 public class Listing extends AbstractQPage {
 
@@ -33,8 +37,26 @@ public class Listing extends AbstractQPage {
 	}
 	@Override
 	protected void writeBody() {
+		RDupes rd=Fotok.rdupes;
 		User user=User.get(page.getQPageManager());
-		write("<h1>Folders accessed by you</h1>\n\n<a href=\"");
+		write("<h1>Folders accessed by you</h1>\n\n");
+		if(false)
+		{
+			write("RDupes: Tasks: ");
+			writeObject(rd.tasks.get());
+			write(" Files indexed: ");
+			writeObject(rd.filesProcessed.get());
+			write(" in ");
+			writeObject(rd.foldersProcessed.get());
+			write(" folders ongoing hash: \n");
+			writeObject(rd.nBytesToHahs.get());
+			write(" bytes in ");
+			writeObject(rd.nFileToHash.get());
+			write(" files\n<br/>\n");
+		}
+		write("<input type=\"file\" accept=\"image/*\" multiple>\n<br/>\n<br/>\n<br/>\n<br/>\n");
+		//		visit(rd, "");
+		write("\n\n<a href=\"");
 		writeHtml(Fotok.clargs.loginPath);
 		write("?url=");
 		writeObject(rootUrl);
@@ -65,6 +87,28 @@ public class Listing extends AbstractQPage {
 		}
 		write("\n");
 		
+	}
+
+	private void visit(RDupesObject ro, String string) {
+		writeObject(string);
+		writeObject(ro.getFullName());
+//		if(ro instanceof RO)
+		if(ro instanceof RDupesPath)
+		{
+			write(" - ");
+			RDupesPath path=(RDupesPath) ro;
+			writeObject(path.getStringInfo());
+			if(ro instanceof RDupesFile)
+			{
+				RDupesFile f=(RDupesFile) ro;
+				writeObject(f.storedHash);
+			}
+		}
+		write("<br/>\n");
+		for(RDupesObject o:ro.getChildren())
+		{
+			visit(o, "-"+string);
+		}
 	}
 
 

@@ -1,4 +1,4 @@
-package fotok;
+package fotok.formathandler;
 
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;

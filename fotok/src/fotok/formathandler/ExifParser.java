@@ -1,16 +1,20 @@
-package fotok;
+package fotok.formathandler;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
+import java.util.function.Function;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -21,25 +25,25 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.stream.ImageOutputStream;
 
-import hu.qgears.commons.UtilFile;
-import hu.qgears.commons.mem.DefaultJavaNativeMemoryAllocator;
-import hu.qgears.commons.mem.INativeMemory;
+import hu.qgears.images.SizeInt;
 
 /**
  * Exif parser and thumbnail generator.
  */
 public class ExifParser {
-	public static void main(String[] args) throws Exception {
-		ExifParser ep = new ExifParser();
-		System.out.println(
-				"Exif data: " + ep.parseFile(new File("/home/rizsi/tmp/fotok/images/New Folder/DSC_0791.JPG")));
-		System.out.println(
-				"Exif data: " + ep.parseFile(new File("/home/rizsi/tmp/fotok/images/New Folder/DSC_0783.JPG")));
+	public ExifData parseFile(File file, Function<SizeInt, SizeInt> thumbSizeCreator) throws IOException {
+//		INativeMemory mem = UtilFile.loadAsByteBuffer(file, DefaultJavaNativeMemoryAllocator.getInstance());
+//		ByteBuffer bb = mem.getJavaAccessor();
+		// processByImageIo(file, thumbSizeCreator);
+		
+		// We just map the file into memory: only the pages accessed will be loaded - extremely fast
+		try (RandomAccessFile raccFile = new RandomAccessFile(file, "r")) {
+			MappedByteBuffer bb = raccFile.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, file.length());
+			return processFile(bb);
+		}
 	}
 
-	private ExifData parseFile(File file) throws IOException {
-		INativeMemory mem = UtilFile.loadAsByteBuffer(file, DefaultJavaNativeMemoryAllocator.getInstance());
-		ByteBuffer bb = mem.getJavaAccessor();
+	public void processByImageIo(File file, Function<SizeInt, SizeInt> thumbSizeCreator) throws IOException {
 		Iterator<?> iterator = ImageIO.getImageReadersBySuffix("jpeg");
 		while (iterator.hasNext()) {
 			ImageReader reader = (ImageReader) iterator.next();
@@ -68,11 +72,40 @@ public class ExifParser {
 						System.out.println("child: " + c);
 					}
 				}
-				// System.out.println("Metadata: "+metadata.get);
-				// As far as I understand you should provide
-				// index as tiff images could have multiple pages
+				if(thumbSizeCreator!=null)
+				{
+					createThumbnail(file, metadata, thumbSizeCreator, reader);
+				}
+			} finally {
+				reader.dispose();
+			}
+		}
+	}
+
+	private void createThumbnail(File file, IIOMetadata metadata, Function<SizeInt, SizeInt> thumbSizeCreator, ImageReader reader) throws IOException {
+		// System.out.println("Metadata: "+metadata.get);
+		// As far as I understand you should provide
+		// index as tiff images could have multiple pages
+		BufferedImage bi = reader.read(0);
+		BufferedImage thumb = new BufferedImage(320, bi.getHeight() * 320 / bi.getWidth(), bi.getType());
+		Graphics2D g = thumb.createGraphics();
+		try {
+			g.drawImage(bi, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
+		} finally {
+			g.dispose();
+		}
+		// ImageIO.write(bi, "jpeg", );
+		writeJPG(metadata, thumb, new File("/tmp/out" + file.getName()));
+	}
+	public void createResizedImage(File file, SizeInt size, File output) throws IOException {
+		Iterator<?> iterator = ImageIO.getImageReadersBySuffix("jpeg");
+		while (iterator.hasNext()) {
+			ImageReader reader = (ImageReader) iterator.next();
+			try {
+				reader.setInput(ImageIO.createImageInputStream(file));
+				IIOMetadata metadata = reader.getImageMetadata(0);
 				BufferedImage bi = reader.read(0);
-				BufferedImage thumb = new BufferedImage(320, bi.getHeight() * 320 / bi.getWidth(), bi.getType());
+				BufferedImage thumb = new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
 				Graphics2D g = thumb.createGraphics();
 				try {
 					g.drawImage(bi, 0, 0, thumb.getWidth(), thumb.getHeight(), null);
@@ -80,14 +113,11 @@ public class ExifParser {
 					g.dispose();
 				}
 				// ImageIO.write(bi, "jpeg", );
-				writeJPG(metadata, thumb, new File("/tmp/out" + file.getName()));
-			} catch (Exception e) {
-				e.printStackTrace();
+				writeJPG(metadata, thumb, output);
 			} finally {
 				reader.dispose();
 			}
 		}
-		return processFile(bb);
 	}
 
 	private void writeJPG(IIOMetadata metadata, BufferedImage bi, File file) throws IOException {
@@ -143,7 +173,7 @@ public class ExifParser {
 		case 0xFFE1: // EXIF
 		{
 			int size = bb.getShort() & 0xffff;
-			System.out.println("EXiF size: 0x" + Integer.toHexString(size));
+			// System.out.println("EXiF size: 0x" + Integer.toHexString(size));
 			assertEq("E", 'E', bb.get() & 0xff);
 			assertEq("x", 'x', bb.get() & 0xff);
 			assertEq("i", 'i', bb.get() & 0xff);
@@ -153,11 +183,11 @@ public class ExifParser {
 			short endiannessCode = bb.getShort();
 			switch (endiannessCode & 0xffff) {
 			case 0x4949: // Little endian
-				System.out.println("LE");
+				// System.out.println("LE");
 				bb.order(ByteOrder.LITTLE_ENDIAN);
 				break;
 			case 0x4D4D: // Big endian
-				System.out.println("BE");
+				// System.out.println("BE");
 				break;
 			default:
 				break;
@@ -168,11 +198,11 @@ public class ExifParser {
 				int offsetIFD = bb.getInt();
 				processIfd(bb, exifDataOffset, offsetIFD);
 				int nextOffsetIFD = bb.getShort() & 0xffff;
-				System.out.println("Next ifd offset: " + Integer.toHexString(nextOffsetIFD));
+				// System.out.println("Next ifd offset: " + Integer.toHexString(nextOffsetIFD));
 			} finally {
 				bb.order(ByteOrder.BIG_ENDIAN);
 			}
-			System.out.println("Goto: " + Integer.toHexString(size + posTag));
+			// System.out.println("Goto: " + Integer.toHexString(size + posTag));
 			bb.position(size + posTag);
 			return false;
 		}
@@ -185,8 +215,8 @@ public class ExifParser {
 		int pos = exifDataOffset + offsetIFD;
 		bb.position(pos);
 		short n = bb.getShort();
-		System.out.println("Process IFD offset: " + exifDataOffset + " " + offsetIFD + " n: 0x" + Integer.toHexString(n)
-				+ " " + Integer.toHexString(pos));
+		// System.out.println("Process IFD offset: " + exifDataOffset + " " + offsetIFD + " n: 0x" + Integer.toHexString(n)
+		//		+ " " + Integer.toHexString(pos));
 		for (int i = 0; i < n; ++i) {
 			int code = bb.getShort() & 0xffff;
 			int df = bb.getShort() & 0xffff;
@@ -277,7 +307,7 @@ public class ExifParser {
 				// Date
 				break;
 			case 0x8769:
-				System.out.println("EXIF data pointer: " + Long.toHexString(value));
+				// System.out.println("EXIF data pointer: " + Long.toHexString(value));
 				processIfd(bb.duplicate().order(bb.order()), exifDataOffset, (int) value);
 				break;
 

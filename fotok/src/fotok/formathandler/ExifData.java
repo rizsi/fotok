@@ -1,4 +1,4 @@
-package fotok;
+package fotok.formathandler;
 
 import java.util.Date;
 

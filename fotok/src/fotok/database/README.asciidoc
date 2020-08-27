@@ -1,0 +1,1 @@
+Metadata database for all files present on the photos server.

@@ -3,7 +3,12 @@ package fotok;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,6 +36,7 @@ import hu.qgears.quickjs.utils.QPageJSHandler;
 import joptsimple.annot.AnnotatedClass;
 import joptsimple.annot.JOHelp;
 import joptsimple.annot.JOSimpleBoolean;
+import rdupes.RDupes;
 
 /**
  * Executable main class that opens a Jetty web server and handles QPage based
@@ -42,6 +48,7 @@ public class Fotok extends AbstractHandler {
 	public static String fImages="/public/image";
 	public static Args clargs;
 	FolderHandler fh;
+	public static RDupes rdupes;
 	public static class Args
 	{
 		@JOHelp("Jetty http server host to bind to.")
@@ -112,6 +119,20 @@ public class Fotok extends AbstractHandler {
 	private void run() throws Exception
 	{
 		Log4Init.init();
+		rdupes=new RDupes();
+		Map<String, Path> l=new TreeMap<>();
+		l.put("fotok", clargs.images.toPath());
+		new Thread("RDUPES") {
+			@Override
+			public void run() {
+				try {
+					rdupes.run(true, l, 1);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}.start();
 		
 		InetSocketAddress sa = new InetSocketAddress(clargs.host, clargs.port);
 		Server server = new Server(sa);
