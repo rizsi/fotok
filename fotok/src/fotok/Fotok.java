@@ -106,7 +106,7 @@ public class Fotok extends AbstractHandler {
 	public Fotok(Args clargs) {
 		Fotok.clargs=clargs;
 		FotosStorage storage=new FotosStorage(clargs, clargs.images, clargs.thumbsFolder);
-		fh=new FolderHandler(storage);
+		fh=new FolderHandler(this, storage);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -153,13 +153,12 @@ public class Fotok extends AbstractHandler {
 
 		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null, null));
 		DispatchHandler h=new DispatchHandler();
-		Fotok fotok=new Fotok(clargs);
-		h.addHandler("/fotok/", new Fotok(clargs));
+		h.addHandler("/fotok/", this);
 		h.addHandler(qScripts, new QPageJSHandler());
 		h.addHandler(fScripts, new FotosJSHandler());
 		h.addHandler(fImages, new SvgHandler());
 		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
-		h.addHandler("/public/access/", new PublicAccess(clargs, fotok));
+		h.addHandler("/public/access/", new PublicAccess(clargs, this));
 		h.addHandler("/debug", new DebugHttpPage().createHandler());
 		clargs.auth=new Authenticator(h, clargs);
 		sessions.setHandler(clargs.auth);

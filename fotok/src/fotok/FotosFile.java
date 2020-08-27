@@ -136,7 +136,8 @@ public class FotosFile {
 		Path np=new Path(p);
 		if(!p.folder)
 		{
-			String name=size+"-"+np.pieces.get(np.pieces.size()-1);
+			String name=//size+"-"+
+					np.pieces.get(np.pieces.size()-1);
 			np.pieces.set(np.pieces.size()-1, name);
 		}
 		return np;

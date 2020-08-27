@@ -52,7 +52,7 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 						}
 					});
 				}
-				ThumbsHandler th=new ThumbsHandler(folder.storage);
+				ThumbsHandler th=new ThumbsHandler(thumbsHandler.fotok, folder.storage);
 				for(FotosFile f: folder.iterateFolderSubFotos())
 				{
 					for(ESize s: ESize.values())

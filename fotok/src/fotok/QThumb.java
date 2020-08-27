@@ -73,7 +73,11 @@ public class QThumb extends QComponent {
 					writeHtml(f.getName());
 					write("\" class=\"thumb-img\">\nVIDEO DOWNLOAD");
 					writeHtml(" - "+f.getFile().length()+" bytes");
-					write("</a>\n<div style=\"position:relative; top:40%\">\nLej\u00E1tsz\u00E1s</div>\n");
+					write("</a>\n<img src=\"");
+					writeHtml(f.getName());
+					write("?size=thumb\" class=\"thumb-img center ");
+					writeObject(rot.getJSClass());
+					write("\"></img>\n");
 				}
 				else
 				{

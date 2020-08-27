@@ -64,6 +64,23 @@ public class FilesProcessor {
 		processorThread.setDaemon(true);
 		processorThread.start();
 	}
+	public File getPreviewImage(String hash, String type)
+	{
+		File root=new File(Fotok.clargs.thumbsFolder,type);
+		File h=getHashFolder(root, hash);
+		switch (type) {
+		case "video":
+			return new File(h, hash+".thumbs.jpg");
+		case "image":
+			return new File(h, hash+"."+maxSize+".jpg");
+		default:
+			return null;
+		}
+	}
+	private File getHashFolder(File root, String hash)
+	{
+		return new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
+	}
 	public void queueImage(String hash, File file, ExifData d)
 	{
 		synchronized (syncObject) {
@@ -71,8 +88,8 @@ public class FilesProcessor {
 				@Override
 				public void run() {
 					try {
-						File root=new File(Fotok.clargs.thumbsFolder,"image_thumbs");
-						File f=new File(root, hash.substring(0,1)+"/"+hash.substring(1,2)+"/"+hash+"."+maxSize+".jpg");
+						File root=new File(Fotok.clargs.thumbsFolder,"image");
+						File f=new File(getHashFolder(root, hash), hash+"."+maxSize+".jpg");
 						f.getParentFile().mkdirs();
 						if(d.width>maxSize||d.height>maxSize)
 						{
@@ -110,8 +127,8 @@ public class FilesProcessor {
 						@Override
 						public void run() {
 							try {
-								File root=new File(Fotok.clargs.thumbsFolder,"video_resizes");
-								File f=new File(root, hash.substring(0,1)+"/"+hash.substring(1,2));
+								File root=new File(Fotok.clargs.thumbsFolder,"video");
+								File f=getHashFolder(root, hash);
 								f.mkdirs();
 								VideoProcessor vp=new VideoProcessor(file, f, hash);
 								ProgressCounter pc=new ProgressCounter(new AbstractProgressCounterHost() {

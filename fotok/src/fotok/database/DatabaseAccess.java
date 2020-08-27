@@ -115,4 +115,7 @@ public class DatabaseAccess {
 			e.printStackTrace();
 		}
 	}
+	public File getPreviewImage(String hash, String type) {
+		return fp.getPreviewImage(hash, type);
+	}
 }

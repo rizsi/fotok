@@ -26,7 +26,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	private ThumbsHandler thumbsHandler;
 	private FotosStorage storage;
 
-	public FolderHandler(FotosStorage storage) {
+	public FolderHandler(Fotok fotok, FotosStorage storage) {
 		dQPage=new QPageHandler(this);
 		createFolderPage=new QPageHandler(CreateFolder.class);
 		filesHandler = new ResourceHandler();
@@ -39,7 +39,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		filesHandler.setMinAsyncContentLength(Integer.MAX_VALUE);
 		filesHandler.setMinMemoryMappedContentLength(Integer.MAX_VALUE);
 		
-		thumbsHandler = new ThumbsHandler(storage);
+		thumbsHandler = new ThumbsHandler(fotok, storage);
 		thumbsHandler.setResourceBase("/");
 		thumbsHandler.setBaseResource(Resource.newResource(storage.cache));
 		thumbsHandler.setDirectoriesListed(true);

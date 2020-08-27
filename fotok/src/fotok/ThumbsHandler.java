@@ -16,7 +16,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 
+import fotok.database.GetProcessedEntryByPath;
 import hu.qgears.commons.ProgressCounter;
 import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilFile;
@@ -24,9 +27,11 @@ import hu.qgears.commons.UtilString;
 
 public class ThumbsHandler extends ResourceHandler {
 	FotosStorage storage;
-
-	public ThumbsHandler(FotosStorage storage) {
+	Fotok fotok;
+	
+	public ThumbsHandler(Fotok fotok, FotosStorage storage) {
 		this.storage = storage;
+		this.fotok=fotok;
 	}
 	private Map<String, Future<Object>> processing=new HashMap<>();
 
@@ -149,6 +154,28 @@ public class ThumbsHandler extends ResourceHandler {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	@Override
+	public Resource getResource(String path) {
+		String dbPath="0"+path;
+		System.out.println("Thumbs Get resource: "+dbPath);
+		GetProcessedEntryByPath gpebp=new GetProcessedEntryByPath(dbPath);
+		try {
+			fotok.da.commit(gpebp);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(gpebp.typeName!=null)
+		{
+			// File is processed and we have a result file
+			File f=fotok.da.getPreviewImage(gpebp.hash, gpebp.typeName);
+			if(f!=null)
+			{
+				return new PathResource(f);
+			}
+		}
+		return super.getResource(path);
 	}
 	private Point loadSize(File sizeFile) throws IOException {
 		String s=UtilFile.loadAsString(sizeFile);
