@@ -38,6 +38,7 @@ import hu.qgears.images.SizeInt;
  */
 public class VideoProcessor extends CommandLineProcessor
 {
+	private File inputOverride=null;
 	private File source;
 	private File targetFolder;
 	private String baseName;
@@ -156,32 +157,66 @@ public class VideoProcessor extends CommandLineProcessor
 	}
 	private List<Pair<SizeInt, File>> ret;
 	public List<Pair<SizeInt, File>> run(int nPreviewImage, SizeInt size) throws Exception {
-		probeFile();
-		ret=new ArrayList<>();
-		int maxHeights[]=new int[] {320,480,640,1080};
-		List<Integer> targetSizes=new ArrayList<>();
-		for(int maxHeight:maxHeights)
+		try
 		{
-			if(probe.height>maxHeight)
+			probeFile();
+			if(exifTool.rotation!=null&&!"0".equals(exifTool.rotation))
 			{
-				targetSizes.add(maxHeight);
+				createRotationRemovedInput();
+			}
+			ret=new ArrayList<>();
+			int maxHeights[]=new int[] {320,480,640,1080};
+			List<Integer> targetSizes=new ArrayList<>();
+			targetSizes.add(null);	// No resize version only transcode so that it works in browser
+			for(int maxHeight:maxHeights)
+			{
+				if(probe.height>maxHeight)
+				{
+					targetSizes.add(maxHeight);
+				}
+			}
+			for(Integer tg: targetSizes)
+			{
+				try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask("Size: "+tg, 1.0/targetSizes.size()))
+				{
+					Pair<SizeInt, File> created=createWithSizeWebEnabled(st, tg);
+					ret.add(created);
+				}
+			}
+			createPreviewImages(nPreviewImage, size);
+		}finally
+		{
+			if(inputOverride!=null)
+			{
+				inputOverride.delete();
+				inputOverride=null;
 			}
 		}
-		targetSizes.add(null);	// No resize version only transcode so that it works in browser
-		for(Integer tg: targetSizes)
-		{
-			try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask("Size: "+tg, 1.0/targetSizes.size()))
-			{
-				Pair<SizeInt, File> created=createWithSizeWebEnabled(st, tg);
-				ret.add(created);
-			}
-		}
-		createPreviewImages(nPreviewImage, size);
 		return ret;
+	}
+	private void createRotationRemovedInput() throws IOException, InterruptedException {
+		commandParts=new ArrayList<>();
+		addCommandParts("ffmpeg", "-i",source.getAbsolutePath());
+		addCommandParts("-y"); // Overwrite output without asking if exists - execution hangs without this in case target exists
+		// Fix transpose vs size problem: Impossible to convert between the formats supported by the filter 'transpose' and the filter 'auto_scaler_0'
+		// In case of some videos they had a rotate=90 exif metadata that triggers transpose automatically but that
+		// breaks the filter chain.
+		addCommandParts("-map_metadata", "0", "-metadata:s:v", "rotate=0");
+		addCommandParts("-codec", "copy");
+		inputOverride=new File(targetFolder.getAbsolutePath()+"/"+baseName+".rotationremoved.mp4");
+		addCommandParts(inputOverride.getAbsolutePath());
+		System.out.println("Remove rotate command: "+UtilString.concat(commandParts, " "));
+		ProcessBuilder pb=new ProcessBuilder(commandParts);
+		pb.redirectError(Redirect.INHERIT);
+		pb.redirectOutput(Redirect.INHERIT);
+		Process p=pb.start();
+		p.waitFor(60000, TimeUnit.SECONDS);
+		p.destroy();
 	}
 	private void createPreviewImages(int nPreviewImage, SizeInt size) throws IOException, InterruptedException
 	{
-		File source=ret.get(0).getB();
+		// The original or the smallest version is the base for thumbnail generation
+		File source=ret.get(ret.size()==1?0:1).getB();
 		probeFile();
 		commandParts=new ArrayList<>();
 		addCommandParts("ffmpeg", "-i", source.getAbsolutePath(), "-y");
@@ -233,7 +268,7 @@ public class VideoProcessor extends CommandLineProcessor
 		{
 			configureHwAccel();
 		}
-		configureInputFile(source);
+		configureInputFile();
 		SizeInt size;
 		if(!reencode)
 		{
@@ -326,9 +361,18 @@ public class VideoProcessor extends CommandLineProcessor
 		// -i input.mp4 -filter_hw_device foo -vf 'format=nv12|vaapi,hwupload' -c:v h264_vaapi output.mp4
 
 	}
-	private void configureInputFile(File source2) {
-
-		addCommandParts("-i",source2.getAbsolutePath());
+	private void configureInputFile() {
+		File src;
+		// In case the original has a Rotation flag then use an intermediate step to remove that metadata!
+		// There was a bug for some inputs: Impossible to convert between the formats supported by the filter 'transpose' and the filter 'auto_scaler_0'
+		if(inputOverride!=null)
+		{
+			src=inputOverride;
+		}else
+		{
+			src=source;
+		}
+		addCommandParts("-i",src.getAbsolutePath());
 		addCommandParts("-y"); // Overwrite output without asking if exists - execution hangs without this in case target exists
 		addCommandParts("-f", "mp4"); // MP4 format is compatible with most web browsers
 		addCommandParts("-strict", "experimental"); // Dunno but I found it online somewhere :-)

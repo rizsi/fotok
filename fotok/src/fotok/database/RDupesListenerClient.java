@@ -3,6 +3,7 @@ package fotok.database;
 import rdupes.IHashProvider;
 import rdupes.RDupesClient;
 import rdupes.RDupesFile;
+import rdupes.RDupesPath;
 
 public class RDupesListenerClient implements RDupesClient
 {
@@ -17,6 +18,13 @@ public class RDupesListenerClient implements RDupesClient
 	public void fileVisited(RDupesFile f) {
 		// Trigger finding of the hash - find it in database or execute hashing.
 		f.getHash().doWithHash((ff,hash,origChC, lastModified, fileSize)->{});
+	}
+	@Override
+	public void fileModified(RDupesPath p) {
+		if(p instanceof RDupesFile)
+		{
+			fileVisited((RDupesFile) p);
+		}
 	}
 	@Override
 	public IHashProvider startHash(RDupesFile f, long fileSize, long lastModified) {

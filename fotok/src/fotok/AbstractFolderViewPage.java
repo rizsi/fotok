@@ -56,7 +56,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					}
 				}
 				page.historyPopState.addListener(e->{
-					System.out.println("Path name: "+e.pathname);
 					if(e.pathname.endsWith("/")&&viewer!=null)
 					{
 						viewer.deleteWindow(null);
@@ -215,6 +214,10 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		}
 
 		private Object deleteWindow(QButton dummy) {
+			if(dummy!=null)
+			{
+				page.historyPushState("folder", "./");
+			}
 			whole.dispose();
 			new InstantJS(page.getCurrentTemplate()) {
 				@Override

@@ -18,6 +18,7 @@ public class ExiftoolProcessor implements Consumer<String>
 	public int height=1;
 	public Date date;
 	public String mimeType;
+	public String rotation;
 	@Override
 	public void accept(String l) {
 		String t=l.trim();
@@ -34,6 +35,10 @@ public class ExiftoolProcessor implements Consumer<String>
 			case "MIME Type":
 				mimeType=keyValue.getB();
 				break;
+			case "Rotation":
+				rotation=keyValue.getB();
+				break;
+			case "Create Date":
 			case "Date/Time Original":
 			{
 				List<String> pieces=UtilString.split(keyValue.getB(), " ");
