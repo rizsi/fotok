@@ -134,7 +134,7 @@ public class Fotok extends AbstractHandler {
 		sessions.addEventListener(HttpSessionQPageManager.createSessionListener());
 		context.setHandler(sessions);
 
-		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null, null));
+		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null, null, null));
 		DispatchHandler h=new DispatchHandler();
 		h.addHandler("/fotok/", this);
 		h.addHandler(qScripts, new QPageJSHandler());
@@ -143,6 +143,7 @@ public class Fotok extends AbstractHandler {
 		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
 		h.addHandler("/public/access/", new PublicAccess(clargs, this));
 		h.addHandler("/","/debug", new DebugHttpPage().createHandler());
+		h.addHandler("/","/log-handler", new LogHandler());
 		clargs.auth=new Authenticator(this, h, clargs);
 		sessions.setHandler(clargs.auth);
 		server.start();

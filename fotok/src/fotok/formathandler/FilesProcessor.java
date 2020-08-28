@@ -75,7 +75,7 @@ public class FilesProcessor {
 		File h=getHashFolder(root, hash);
 		switch (type) {
 		case "video":
-			return new File(h, hash+".thumbs.jpg");
+			return new File(h, hash+"_thumbparts/001.jpg");
 		case "image":
 			return new File(h, hash+"."+size+".jpg");
 		default:

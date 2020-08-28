@@ -20,10 +20,12 @@ public class FolderPreview extends HtmlTemplate{
 		super(out);
 	}
 
-	public List<ImageLoaderLauncher> generatePreview(FotosFolder home, FotosFolder ff, boolean thumbs, String contextPath)
+	public List<ImageLoaderLauncher> generatePreview(FotosFolder home, FotosFolder ff, boolean thumbs, String contextPath, String id)
 	{
 		List<ImageLoaderLauncher> ret=new ArrayList<>(6);
-		write("<svg width=\"100%\" height=\"100%\">\n  Sorry, your browser does not support inline SVG.\n  <image xlink:href=\"");
+		write("<svg ");
+		writeObject(id==null?"":"id="+id);
+		write(" width=\"100%\" height=\"100%\">\n  Sorry, your browser does not support inline SVG.\n  <image xlink:href=\"");
 		writeHtml(contextPath+Fotok.fImages+"/folder.svg");
 		write("\" x=\"0%\" y=\"0%\" height=\"100%\" width=\"100%\"/>\n");
 		int n=0;
@@ -38,7 +40,7 @@ public class FolderPreview extends HtmlTemplate{
 				int y=(n/3)*(h+m)+24;
 				String path=c.getRelativePath(home);
 				String imageId="preview-"+(thumbs?"thumb":"normal")+path;
-				String refPath=path+(thumbs?"?size=thumb":"size=normal");
+				String refPath=path+("?size=thumb");
 				ret.add(new ImageLoaderLauncher(imageId, refPath, 3));
 				write("<rect x=\"");
 				writeObject(x-1);

@@ -63,11 +63,15 @@ class QThumb extends QComponent
 	}
 	setRotation(id, rot)
 	{
-		var cla=document.getElementById(id).classList;
-		cla.remove("rotate-0");
-		cla.remove("rotate-90");
-		cla.remove("rotate-180");
-		cla.remove("rotate-270");
-		cla.add(rot);
+		var dom=document.getElementById(id);
+		if(dom)
+		{
+			var cla=dom.classList;
+			cla.remove("rotate-0");
+			cla.remove("rotate-90");
+			cla.remove("rotate-180");
+			cla.remove("rotate-270");
+			cla.add(rot);
+		}
 	}
 }

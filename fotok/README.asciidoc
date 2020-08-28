@@ -12,9 +12,14 @@ Required hearders:
 == TODOS
 
  * When processing was started but not finished and the server is stopped then processing will not restart.
+ * Video processing error handling: if processing is not ready then do not mark the file processed
+ * Processing state feedback to UI
+ * Processing errors feedback (logs or UI?)
  * Possible to set video size
  * Possible to adjust image resolution to the client monitor resolution
  * Better image view UI
  ** Hide rotate button
- ** Use touch swipe to go to next image
+ ** Use touch swipe to go to next image good example: https://css-tricks.com/simple-swipe-with-vanilla-javascript/
  ** Back button on phone exits the image viewer (but still URL is updated)
+ ** Video preview should have a play button on it
+ * Self check processed files whether they exist (triggerable somehow)

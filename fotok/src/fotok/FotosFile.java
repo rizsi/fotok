@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import fotok.database.GetProcessedEntryByPath;
 import fotok.database.GetRotationByPath;
 import fotok.database.SetRotationByPath;
 import hu.qgears.commons.UtilFile;
+import hu.qgears.images.SizeInt;
 
 public class FotosFile {
 	public static final String EXT_ROTATION=".rotation";
@@ -45,11 +47,6 @@ public class FotosFile {
 		return new File(storage.images, p.toStringPath());
 	}
 	
-	protected File getRotationFile()
-	{
-		return new File(storage.images, p.toStringPath()+EXT_ROTATION);
-	}
-
 	public static FotosFile create(FotosFolder parent, File f) {
 		return create(parent, f.getName());
 	}
@@ -164,5 +161,14 @@ public class FotosFile {
 	private String getSystemPath() {
 		// TODO support multiple root folders
 		return "0/"+p.toStringPath();
+	}
+	public SizeInt getSize() {
+		try {
+			return storage.da.commit(new GetProcessedEntryByPath(getSystemPath())).getSize();
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return new SizeInt(1, 1);
 	}
 }

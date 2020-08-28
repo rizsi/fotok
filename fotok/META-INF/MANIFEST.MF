@@ -17,4 +17,5 @@ Require-Bundle: hu.qgears.quickjs;bundle-version="1.0.0",
  com.jspatech.slf4.consoleimpl;bundle-version="1.0.0",
  rdupes;bundle-version="1.0.0",
  org.sqlite;bundle-version="1.0.0",
- com.jspa.commons;bundle-version="1.0.0"
+ com.jspa.commons;bundle-version="1.0.0",
+ org.json;bundle-version="1.0.0"

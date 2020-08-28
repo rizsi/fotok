@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import hu.qgears.images.SizeInt;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.IInMemoryPost;
 import hu.qgears.quickjs.qpage.QComponent;
@@ -22,13 +23,15 @@ public class QThumb extends QComponent {
 	LabelsGenerator labelsGenerator;
 	ERotation rot=ERotation.rotation0;
 	String contextPath;
+	private SizeInt originalSize;
 	private List<ImageLoaderLauncher> imagesToLoad=new ArrayList<>(1);
-	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f, LabelsGenerator labelsGenerator, String contextPath) {
+	public QThumb(QPage page, String id, FotosFolder parent, FotosFile f, LabelsGenerator labelsGenerator, String contextPath, SizeInt originalSize) {
 		super(page, id);
 		this.contextPath=contextPath;
 		this.f=f;
 		this.parent=parent;
 		this.labelsGenerator=labelsGenerator;
+		this.originalSize=originalSize;
 		if(f!=null)
 		{
 			rot=f.getRotation();
@@ -63,7 +66,7 @@ public class QThumb extends QComponent {
 					write("\t\t\t<a href=\"");
 					writeHtml(f.getName());
 					write("/\" class=\"thumb-img\">\n");
-					imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true, contextPath));
+					imagesToLoad.addAll(new FolderPreview(this).generatePreview(QThumb.this.parent, (FotosFolder)f, true, contextPath, null));
 					write("\t\t\t</a>\n");
 				}else if(FotosFile.isVideo(f))
 				{
@@ -101,7 +104,6 @@ public class QThumb extends QComponent {
 	
 	@Override
 	public void handle(HtmlTemplate parent, IInMemoryPost post) throws IOException {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -155,5 +157,8 @@ public class QThumb extends QComponent {
 			ill.launch(this);
 		}
 		setParent(null);
+	}
+	public SizeInt getOriginalSize() {
+		return originalSize;
 	}
 }

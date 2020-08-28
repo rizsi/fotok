@@ -10,14 +10,18 @@ import java.util.TreeMap;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Request;
+import org.json.JSONObject;
 
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
+import hu.qgears.images.SizeInt;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QButton;
+import hu.qgears.quickjs.qpage.QComponent;
 import hu.qgears.quickjs.qpage.QDiv;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.utils.AbstractQPage;
+import hu.qgears.quickjs.utils.ServerLoggerJs;
 import hu.qgears.quickjs.utils.UtilHttpContext;
 
 abstract public class AbstractFolderViewPage extends AbstractQPage {
@@ -47,8 +51,12 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			public void run() {
 				refresh();
 				updateShares();
-				if(file!=null&&thumbs!=null&&file.getName()!=null)
+				
+				if(file!=null&&thumbs!=null&&file.getName()!=null&&file!=folder)
 				{
+					// Back button take us to the folder - useful on handheld devices
+					page.historyReplaceState("folder", "./");
+					page.historyPushState(file.getName(), file.getName());
 					QThumb thumb=thumbs.get(file.getName());
 					if(thumb!=null)
 					{
@@ -76,7 +84,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	public void setRequest(Request baseRequest, HttpServletRequest request) {
 		super.setRequest(baseRequest, request);
 		contextPath=UtilHttpContext.getContext(baseRequest);
-		System.out.println("Target: "+baseRequest.getPathInfo());
+		System.out.println("Target: "+baseRequest.getPathInfo()+" cp: "+contextPath);
 	}
 	abstract protected void installEditModeButtons(QPage page);
 
@@ -112,7 +120,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 							}
 						}
 					};
-					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg, contextPath);
+					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg, contextPath, f.getSize());
 					exists=t;
 					setupThumbEditObjects(f, t);
 					new DomCreator() {
@@ -153,11 +161,13 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	class Viewer
 	{
 		QThumb t;
-		QDiv img=null;
+		QComponent img=null;
 		QButton rotate=null;
-		QDiv prevImg=null;
-		QDiv nextImg=null;
+		QComponent prevImg=null;
+		QComponent nextImg=null;
 		QButton whole;
+		QDiv viewerInstance;
+
 		public Viewer(QThumb t, boolean pushHistory) {
 			super();
 			this.t = t;
@@ -170,26 +180,38 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 		public void start() {
 			whole=new QButton(page, "viewer");
-			whole.rightClicked.addListener(e->{
-				rotate.setStyle("hidden", false);
-			});
 			rotate=new QButton(whole, "viewer-image-rotate");
 			rotate.clicked.addListener(e->{rotate();});
+			QButton hideControls=new QButton(whole, "hideControls");
+			QButton leave=new QButton(whole, "leaveButton");
+			whole.rightClicked.addListener(e->{
+				rotate.setStyle("hidden", false);
+				leave.setStyle("hidden", false);
+				hideControls.setStyle("hidden", false);
+			});
+			hideControls.clicked.addListener(e->{
+				rotate.setStyle("hidden", true);
+				leave.setStyle("hidden", true);
+				hideControls.setStyle("hidden", true);
+			});
+			leave.clicked.addListener(e->{
+				deleteWindow(leave);
+			});
 			new DomCreator() {
 				@Override
 				public void generateDom() {
-					write("<div id=\"viewer\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n\t<button id=\"viewer-prev\" style=\"z-index:1; position: absolute; top:0px; left:0px; width:10%; height:10%; overflow:hidden;\"></button>\n\t<button id=\"viewer-next\" style=\"z-index:1; position:absolute; top:0px; left:80%; width:10%; height:10%; overflow:hidden;\"></button>\n<button id=\"");
+					write("<div id=\"viewer\" style=\"top: 0; left: 0; width: 100%; height: 100%; position:fixed; color: white; display: block; z-index:1000; background-color:rgba(0,0,0,.8);\">\n<button id=\"");
 					writeHtml(rotate.getId());
-					write("\" class=\"hidden\" style=\"position: absolute; z-index:1; left:50%; top:10%; width=10%;\">Rotate</button>\n</div>\n");
+					write("\" class=\"hidden\" style=\"position: absolute; z-index:2; left:45%; top:10%; width:10%; height:10%;\">Rotate</button>\n<button id=\"");
+					writeHtml(leave.getId());
+					write("\" class=\"hidden\" style=\"position: absolute; z-index:2; left:45%; top:45%; width:10%; height:10%;\">Leave</button>\n<button id=\"");
+					writeHtml(hideControls.getId());
+					write("\" class=\"hidden\" style=\"position: absolute; z-index:2; left:45%; top:65%; width:10%; height:10%;\">Hide controls</button>\n</div>\n");
 				}
 			}.initialize(page, "documentBody");
 			// img.src.setPropertyFromServer(t.f.getName());
 			generateViews();
-			QButton prev=new QButton(whole, "viewer-prev");
-			prev.clicked.addListener(e->prev());
-			QButton next=new QButton(whole, "viewer-next");
-			next.clicked.addListener(e->next());
-			whole.clicked.addListener(e->deleteWindow(whole));
+			// whole.clicked.addListener(e->deleteWindow(whole));
 			new InstantJS(page.getCurrentTemplate()) {
 				@Override
 				public void generate() {
@@ -208,7 +230,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				write("\tpage.components[\"");
 				writeJSValue(t.getId());
 				write("\"].setRotation(\"");
-				writeJSValue("viewer-image-image");
+				writeJSValue("viewer-image");
 				write("\", \"");
 				writeJSValue(newr.getJSClass());
 				write("\");\n");
@@ -234,18 +256,57 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		}
 
 		private void generateViews() {
-			generateView(t.f, "viewer-image", "viewer", "viewer-image-image", false);
-			new InstantJS(page.getCurrentTemplate()) {
+			QThumb prev=thumbs.get(t.prevName);
+			QThumb next=thumbs.get(t.nextName);
+			new DomCreator() {
 				@Override
-				public void generate() {
-					write("new ImageResize(document.getElementById(\"viewer-image-image\"));\t\t\t\t\n");
+				public void generateDom() {
+					write("<div id=\"viewerInstance\" style=\"width:100%;height:100%\"></div>\n");
 				}
-			}.generate();
-			generateView(thumbs.get(t.prevName).f, "viewer-image-prev", "viewer-prev", null, true);
-			generateView(thumbs.get(t.nextName).f, "viewer-image-next", "viewer-next", null, true);
-			img=new QDiv(whole, "viewer-image");
-			prevImg=new QDiv(whole, "viewer-image-prev");
-			nextImg=new QDiv(whole, "viewer-image-next");
+			}.initialize(page, whole.getId());
+			viewerInstance=new QDiv(whole, "viewerInstance");
+			viewerInstance.getUserEvent().addListener(e->{
+				String swipe=new JSONObject(e).getString("swipe");
+				if("left".equals(swipe))
+				{
+					stepTo(next, true);
+				}else if("right".equals(swipe))
+				{
+					stepTo(prev, true);
+				}else if("none".equals(swipe) && t.f.isFolder())
+				{
+					try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
+					{
+						write("window.location.href='");
+						writeJSValue(t.f.getName());
+						write("/';\n");
+					}
+				}
+			});
+			img=generateView(t.f, "viewer-image", "viewerInstance", "viewer-image-image", false);
+			prevImg=generateView(prev.f, "viewer-image-prev", "viewerInstance", null, true);
+			nextImg=generateView(next.f, "viewer-image-next", "viewerInstance", null, true);
+			
+			nextImg.getInitEvent().addListener(e->{
+				try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
+				{
+					write("new ImageSwipe(page.components[\"");
+					writeHtml(viewerInstance.getId());
+					write("\"],\n\t\t\tpage.components[\"");
+					writeHtml(img.getId());
+					write("\"], ");
+					writeSize(t.getOriginalSize());//NB
+					write(",\n\t\t\tpage.components[\"");
+					writeHtml(prevImg.getId());
+					write("\"], ");
+					writeSize(prev.getOriginalSize());//NB
+					write(", \n\t\t\tpage.components[\"");
+					writeHtml(nextImg.getId());
+					write("\"], ");
+					writeSize(next.getOriginalSize());//NB
+					write(");\n");
+				}
+			});
 			if(FotosFile.isImage(t.f))
 			{
 				
@@ -255,27 +316,24 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}
 		}
 
-		private void generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
+		private QComponent generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
 		{
 			List<ImageLoaderLauncher> subImages=new ArrayList<>();
 			new DomCreator() {
 				@Override
 				public void generateDom() {
-					write("<div id=\"");
-					writeHtml(id);
-					write("\" style=\"width:100%; height:100%\">\n");
 					if(f.isFolder())
 					{
-						subImages.addAll(new FolderPreview(this).generatePreview(folder, (FotosFolder)f, false, contextPath));
+						subImages.addAll(new FolderPreview(this).generatePreview(folder, (FotosFolder)f, false, contextPath, id));
 					}else if(FotosFile.isImage(f))
 					{
-						write("\t<img ");
-						writeObject(imageId==null?"":"id=\""+imageId+"\"");
-						write(" src=\"");
+						write("\t<img id=\"");
+						writeObject(id);
+						write("\" src=\"");
 						writeHtml(f.getName());
 						write("?size=");
 						writeObject(selectedSize);
-						write("\" style=\"max-width:100%; max-height:100%; position: relative;\" class=\"center ");
+						write("\" class=\"center ");
 						writeObject(f.getRotation().getJSClass());
 						write("\"></img>\n");
 					}
@@ -283,33 +341,37 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					{
 						if(preview)
 						{
-							write("\t<img ");
-							writeObject(imageId==null?"":"id=\""+imageId+"\"");
-							write(" src=\"");
+							write("\t<div id=\"");
+							writeObject(id);
+							write("\">\n\t<img src=\"");
 							writeHtml(f.getName());
 							write("?size=");
 							writeObject(ESize.thumb);
-							write("\" style=\"max-width:100%; max-height:100%; position: relative;\" class=\"center ");
+							write("\" class=\"center ");
 							writeObject(f.getRotation().getJSClass());
-							write("\"></img>\n");
+							write("\" width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\"></img>\n\t</div>\n");
 						}else
 						{
-							write("<video width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\"controls>\n  <source src=\"");
+							write("<div id=\"");
+							writeObject(id);
+							write("\">\n<video  width=\"80%\" height=\"80%\" style=\"position:absolute; top:10%; left:10%;\" controls>\n  <source src=\"");
 							writeHtml(f.getName());
-							write("?video=html5&format=mp4\" type=\"video/mp4\">\nYour browser does not support the video tag.\n</video>\n");
+							write("?video=html5&format=mp4\" type=\"video/mp4\">\nYour browser does not support the video tag.\n</video>\n</div>\n");
 						}
 					}
 					else
 					{
-						write("Unknown file type\n");
+						write("<div id=\"");
+						writeHtml(id);
+						write("\">Unknown file type</div>\n");
 					}
-					write("\t</div>\n");
 				}
 			}.initialize(page, parent);
 			for(ImageLoaderLauncher ill: subImages)
 			{
 				ill.launch(page.getCurrentTemplate());
 			}
+			return new QDiv(viewerInstance, id);
 		}
 		private Object next() {
 			return stepTo(t.nextName, true);
@@ -325,6 +387,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			img.dispose();
 			prevImg.dispose();
 			nextImg.dispose();
+			viewerInstance.dispose();
 			t=next;
 			if(replaceState)
 			{
@@ -346,6 +409,14 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		}
 		return null;
 	}
+	public void writeSize(SizeInt originalSize) {
+		write("{ width:");
+		writeObject(originalSize.getWidth());
+		write(",height:");
+		writeObject(originalSize.getHeight());
+		write("}");
+	}
+
 	private String getName()
 	{
 		String folderName=folder.getName();
@@ -361,7 +432,9 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		super.writeHeaders();
 		write("<title>");
 		writeHtml(getTitle());
-		write("</title>\n<script type=\"text/javascript\" src=\"");
+		write("</title>\n<script language=\"javascript\" type=\"text/javascript\">\n");
+		new ServerLoggerJs().generate(this, contextPath+"/log-handler");
+		write("</script>\n<script type=\"text/javascript\" src=\"");
 		writeHtml(contextPath+Fotok.fScripts);
 		write("/ArrayView.js\"></script>\n<script type=\"text/javascript\" src=\"");
 		writeHtml(contextPath+Fotok.fScripts);
