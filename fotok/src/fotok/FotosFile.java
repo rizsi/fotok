@@ -18,6 +18,7 @@ public class FotosFile {
 	public static final String EXT_ROTATION=".rotation";
 	protected FotosStorage storage;
 	Path p;
+	private long date;
 	static Set<String> knowExtensions=new HashSet<>();
 	static Set<String> knowVideoExtensions=new HashSet<>();
 	{
@@ -158,7 +159,7 @@ public class FotosFile {
 			return ERotation.rotation0;
 		}
 	}
-	private String getSystemPath() {
+	public String getSystemPath() {
 		// TODO support multiple root folders
 		return "0/"+p.toStringPath();
 	}
@@ -170,5 +171,11 @@ public class FotosFile {
 			e1.printStackTrace();
 		}
 		return new SizeInt(1, 1);
+	}
+	public void setDate(long d) {
+		this.date=d;
+	}
+	public long getDate() {
+		return date;
 	}
 }

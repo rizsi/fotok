@@ -2,10 +2,13 @@ package fotok;
 
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,6 +17,8 @@ import org.json.JSONObject;
 
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
+import fotok.database.GetAllProcessedEntryByPath;
+import fotok.database.GetProcessedEntryByPath;
 import hu.qgears.images.SizeInt;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QButton;
@@ -35,6 +40,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	// Initial file that the page was opened with
 	private FotosFile file;
 	ThumbsHandler thumbsHandler;
+	private int index=0;
 	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
 		this.mode=mode;
 		this.folder=uploadFolder;
@@ -94,6 +100,19 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		try {
 			Map<String, QThumb> toDelete=new HashMap<>(thumbs);
 			List<FotosFile> l=folder.listFiles();
+			List<GetProcessedEntryByPath> entries=folder.storage.da.commit(new GetAllProcessedEntryByPath(l.stream().map(ff->ff.getSystemPath()).collect(Collectors.toList()))).ret;
+			for(int i=0;i<l.size();++i)
+			{
+				l.get(i).setDate(entries.get(i).date);
+				System.out.println(entries.get(i).date);
+			}
+			Collections.sort(l, new Comparator<FotosFile>() {
+				@Override
+				public int compare(FotosFile o2, FotosFile o1) {
+					return Long.compare(o1.getDate(), o2.getDate());
+				}
+			});
+			//Collections.reverse(l);
 			String prevName=l.size()>0?l.get(l.size()-1).getName():"";
 			QThumb prevObject=null;
 			for(FotosFile f: l)
@@ -120,7 +139,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 							}
 						}
 					};
-					QThumb t=new QThumb(page, "thumb-"+f.getPrefixedName(), folder, f, lg, contextPath, f.getSize());
+					QThumb t=new QThumb(page, "thumb-"+String.format("%05d" , index++)+f.getPrefixedName(), folder, f, lg, contextPath, f.getSize());
 					exists=t;
 					setupThumbEditObjects(f, t);
 					new DomCreator() {
@@ -163,8 +182,8 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		QThumb t;
 		QComponent img=null;
 		QButton rotate=null;
-		QComponent prevImg=null;
-		QComponent nextImg=null;
+		QButton prevImg=null;
+		QButton nextImg=null;
 		QButton whole;
 		QDiv viewerInstance;
 
@@ -283,9 +302,11 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					}
 				}
 			});
-			img=generateView(t.f, "viewer-image", "viewerInstance", "viewer-image-image", false);
-			prevImg=generateView(prev.f, "viewer-image-prev", "viewerInstance", null, true);
-			nextImg=generateView(next.f, "viewer-image-next", "viewerInstance", null, true);
+			img=new QDiv(viewerInstance, generateView(t.f, "viewer-image", "viewerInstance", "viewer-image-image", false));
+			prevImg=new QButton(viewerInstance, generateView(prev.f, "viewer-image-prev", "viewerInstance", null, true));
+			nextImg=new QButton(viewerInstance, generateView(next.f, "viewer-image-next", "viewerInstance", null, true));
+			prevImg.clicked.addListener(e->{prev();});
+			nextImg.clicked.addListener(e->{next();});
 			
 			nextImg.getInitEvent().addListener(e->{
 				try(ResetOutputObject roo=setParent(page.getCurrentTemplate()))
@@ -316,7 +337,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}
 		}
 
-		private QComponent generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
+		private String generateView(FotosFile f, String id, String parent, String imageId, boolean preview)
 		{
 			List<ImageLoaderLauncher> subImages=new ArrayList<>();
 			new DomCreator() {
@@ -371,7 +392,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			{
 				ill.launch(page.getCurrentTemplate());
 			}
-			return new QDiv(viewerInstance, id);
+			return id;
 		}
 		private Object next() {
 			return stepTo(t.nextName, true);

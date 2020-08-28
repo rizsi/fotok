@@ -14,6 +14,7 @@ public class GetProcessedEntryByPath extends MultiSQLTemplate
 	public int width=1;
 	public int height=1;
 	public int n=0;
+	public long date=0;
 
 	public GetProcessedEntryByPath(String path) {
 		super();
@@ -23,7 +24,7 @@ public class GetProcessedEntryByPath extends MultiSQLTemplate
 
 	@Override
 	protected void doExecute() throws SQLException {
-		write("select processed.typeName, processed.md5sum, processed.width, processed.height from files, processed  where \n\tfiles.path=");
+		write("select processed.typeName, processed.md5sum, processed.width, processed.height, processed.date from files, processed  where \n\tfiles.path=");
 		writeSQLValue(path);
 		write(" and \n\tfiles.md5sum=processed.md5sum");
 		executeAsPreparedStatementResultSet(conn, rs->{
@@ -35,6 +36,7 @@ public class GetProcessedEntryByPath extends MultiSQLTemplate
 				hash=rs.getString(2);
 				width=rs.getInt(3);
 				height=rs.getInt(4);
+				date=rs.getLong(5);
 			}
 		});
 	}
