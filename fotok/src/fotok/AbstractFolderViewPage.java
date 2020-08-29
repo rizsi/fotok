@@ -41,6 +41,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	private FotosFile file;
 	ThumbsHandler thumbsHandler;
 	private int index=0;
+	private boolean descending;
 	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
 		this.mode=mode;
 		this.folder=uploadFolder;
@@ -91,6 +92,10 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		super.setRequest(baseRequest, request);
 		contextPath=UtilHttpContext.getContext(baseRequest);
 		System.out.println("Target: "+baseRequest.getPathInfo()+" cp: "+contextPath);
+		if("desc".equals(baseRequest.getParameter("order")))
+		{
+			descending=true;
+		}
 	}
 	abstract protected void installEditModeButtons(QPage page);
 
@@ -108,11 +113,14 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}
 			Collections.sort(l, new Comparator<FotosFile>() {
 				@Override
-				public int compare(FotosFile o2, FotosFile o1) {
+				public int compare(FotosFile o1, FotosFile o2) {
 					return Long.compare(o1.getDate(), o2.getDate());
 				}
 			});
-			//Collections.reverse(l);
+			if(descending)
+			{
+				Collections.reverse(l);
+			}
 			String prevName=l.size()>0?l.get(l.size()-1).getName():"";
 			QThumb prevObject=null;
 			for(FotosFile f: l)

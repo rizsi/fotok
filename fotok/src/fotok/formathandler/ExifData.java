@@ -12,6 +12,6 @@ public class ExifData {
 	public int orientation = 1;
 	@Override
 	public String toString() {
-		return "["+width+"x"+height+"] "+date;
+		return "["+width+"x"+height+"] "+date+" "+orientation;
 	}
 }

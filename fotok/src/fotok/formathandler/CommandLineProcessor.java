@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class CommandLineProcessor {
-	
-	
 	protected List<String> commandParts;
 	protected void addCommandParts(String... parts) {
 		for(String s: parts)

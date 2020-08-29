@@ -132,17 +132,19 @@ public class VideoProcessor extends CommandLineProcessor
 			ProcessBuilder pb=new ProcessBuilder("ffprobe", source.getAbsolutePath());
 			pb.redirectOutput(Redirect.INHERIT);
 			Process p=pb.start();
-			p.waitFor(10000, TimeUnit.MILLISECONDS);
 			probe=new FFprobeProcessor();
+			// TODO whatif no input
 			processLines(p.getErrorStream(), probe);
+			waitProperExit(p, 10);
 		}
 		{
 			ProcessBuilder pb=new ProcessBuilder("exiftool", source.getAbsolutePath());
 			pb.redirectError(Redirect.INHERIT);
 			Process p=pb.start();
-			p.waitFor(10000, TimeUnit.MILLISECONDS);
 			exifTool=new ExiftoolProcessor();
+			// TODO whatif no input
 			processLines(p.getInputStream(), exifTool);
+			waitProperExit(p, 10);
 		}
 		System.out.println("Duration: "+probe.durationDecades);
 		System.out.println("Data: "+probe.codec+" "+probe.width+" "+probe.height);
@@ -151,6 +153,22 @@ public class VideoProcessor extends CommandLineProcessor
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 		System.out.println("TZ: "+df.format(exifTool.date)+" "+tz);
 		probed=true;
+	}
+	private void waitProperExit(Process p, int seconds) throws InterruptedException {
+		try
+		{
+			p.waitFor(seconds, TimeUnit.SECONDS);
+			assertEq(p.exitValue(), 0);
+		}finally
+		{
+			p.destroy();
+		}
+	}
+	private void assertEq(int exitValue, int i) {
+		if(exitValue!=i)
+		{
+			throw new RuntimeException("Command line tool failed: "+exitValue+" req: "+i);
+		}
 	}
 	private List<Pair<SizeInt, File>> ret;
 	public List<Pair<SizeInt, File>> run(int nPreviewImage, SizeInt size) throws Exception {
@@ -176,7 +194,16 @@ public class VideoProcessor extends CommandLineProcessor
 			{
 				try(ProgressCounterSubTask st=ProgressCounter.getCurrent().subTask("Size: "+tg, 1.0/targetSizes.size()))
 				{
-					Pair<SizeInt, File> created=createWithSizeWebEnabled(st, tg);
+					Pair<SizeInt, File> created=null;
+					try {
+						created = createWithSizeWebEnabled(st, tg);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					if(created==null)
+					{
+						created = createWithSizeWebEnabledNoHwDecode(st, tg);
+					}
 					ret.add(created);
 				}
 			}
@@ -207,8 +234,7 @@ public class VideoProcessor extends CommandLineProcessor
 		pb.redirectError(Redirect.INHERIT);
 		pb.redirectOutput(Redirect.INHERIT);
 		Process p=pb.start();
-		p.waitFor(60000, TimeUnit.SECONDS);
-		p.destroy();
+		waitProperExit(p, (int)probe.durationDecades*100*1);
 	}
 	private void createPreviewImages(int nPreviewImage, SizeInt size) throws IOException, InterruptedException
 	{
@@ -303,6 +329,42 @@ public class VideoProcessor extends CommandLineProcessor
 		executeConversionProcess(st);
 		return new Pair<SizeInt, File>(size, output);
 	}
+	private Pair<SizeInt, File> createWithSizeWebEnabledNoHwDecode(ProgressCounterSubTask st, Integer height) throws IOException, InterruptedException {
+		commandParts=new ArrayList<>();
+		addCommandParts("ffmpeg");
+		addCommandParts("-vaapi_device", "/dev/dri/renderD128");
+		configureInputFile();
+		boolean reencode=(!"h264".equals(probe.codec))||(height!=null);
+
+		SizeInt size;
+		if(!reencode)
+		{
+			addCommandParts("-c:v", "copy");
+			size=new SizeInt(probe.width, probe.height);
+		}else
+		{
+			size=FilesProcessor.thumbSize(probe.width, probe.height, height);
+			addCommandParts(
+					"-vf", 
+					"scale=w="+size.getWidth()+":h="+size.getHeight()+""+
+					",format=nv12"+
+					",hwupload"
+					
+					,"-c:v", "h264_vaapi");
+		}
+		if("aac".equals(probe.audioCodec))
+		{
+			addCommandParts("-c:a", "copy");
+		}else
+		{
+			addCommandParts("-c:a", "aac"
+					,"-b:a","128k"); // Sound bitrate I guess
+		}
+		File output=new File(targetFolder, baseName+"."+height+".mp4");
+		commandParts.add(output.getAbsolutePath());
+		executeConversionProcess(st);
+		return new Pair<SizeInt, File>(size, output);
+	}
 	private void executeConversionProcess(ProgressCounterSubTask st) throws IOException, InterruptedException {
 		System.out.println("Command: "+UtilString.concat(commandParts, " "));
 		ProcessBuilder pb=new ProcessBuilder(commandParts);
@@ -334,13 +396,7 @@ public class VideoProcessor extends CommandLineProcessor
 				System.err.println("Unknown line: "+l);
 			}
 		}
-		int v=p.waitFor();
-		if(v==0)
-		{
-			// TODO
-//			java.nio.file.Path cp=cacheFile.toPath();
-//			Files.move(c.toPath(), cp);
-		}
+		waitProperExit(p, (int)probe.durationDecades*100*10);
 	}
 	private void configureHwAccel()
 	{

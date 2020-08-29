@@ -28,6 +28,7 @@ public class FormatHandler extends CommandLineProcessor
 			return;
 		}catch(Exception ioex)
 		{
+			// ioex.printStackTrace();
 			// Ignore - file may not be an image...
 		}
 		ProcessBuilder pb=new ProcessBuilder("exiftool", file.getAbsolutePath());
@@ -35,6 +36,10 @@ public class FormatHandler extends CommandLineProcessor
 		Process p=pb.start();
 		ExiftoolProcessor etp=new ExiftoolProcessor();
 		processLines(p.getInputStream(), etp);
+		if(etp.mimeType!=null && etp.mimeType.startsWith("image/"))
+		{
+			da.fp.queueImage(hash, file, null);
+		}
 		if(etp.mimeType!=null && etp.mimeType.startsWith("video/"))
 		{
 			// System.out.println("VIDEO: "+hash+" "+file.getAbsoluteFile()+" "+etp.date);

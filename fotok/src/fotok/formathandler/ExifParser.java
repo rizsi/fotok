@@ -108,7 +108,7 @@ public class ExifParser {
 	 * @param exifOrientationOfOriginal 1 means no transformation
 	 * @throws IOException
 	 */
-	public static void createResizedImages(File file, List<Pair<File, SizeInt>> sizes, int exifOrientationOfOriginal) throws IOException {
+	public static void createResizedImages(File file, List<Pair<File, SizeInt>> sizes, ExifData exifData) throws IOException {
 		Iterator<?> iterator = ImageIO.getImageReadersBySuffix("jpeg");
 		while (iterator.hasNext()) {
 			ImageReader reader = (ImageReader) iterator.next();
@@ -129,11 +129,19 @@ public class ExifParser {
 	//				// Drawing the rotated image at the required drawing locations
 	//				g2d.drawImage(op.filter(image, null), drawLocationX, drawLocationY, null);
 					BufferedImage thumb;
-					if(exifOrientationOfOriginal>4)
+					if(exifData.orientation>4)
 					{
+						if(exifData.width!=bi.getHeight()||exifData.height!=bi.getWidth())
+						{
+							throw new IOException("Image size does not fit exif data! "+exifData+" vs "+bi.getWidth()+" "+bi.getHeight()+" (rotate of image with improper tool may cause this issue)");
+						}
 						thumb=new BufferedImage(size.getHeight(), size.getWidth(), bi.getType());
 					}else
 					{
+						if(exifData.width!=bi.getWidth()||exifData.height!=bi.getHeight())
+						{
+							throw new IOException("Image size does not fit exif data! "+exifData+" vs "+bi.getWidth()+" "+bi.getHeight()+" (rotate of image with improper tool may cause this issue)");
+						}
 						thumb=new BufferedImage(size.getWidth(), size.getHeight(), bi.getType());
 					}
 					Graphics2D g = thumb.createGraphics();

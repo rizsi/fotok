@@ -23,3 +23,15 @@ Required hearders:
  ** Back button on phone exits the image viewer (but still URL is updated)
  ** Video preview should have a play button on it
  * Self check processed files whether they exist (triggerable somehow)
+ * LineageOs O+3T sourced video can not be converted on the server
+ * loading... animáció
+ 
+== TODO fixed
+
+ * Konvertálási hibák:
+  * DSCN0340.JPG - rossz arányokkal jelenik meg! - hibás EXIF metaadat - valószínűleg a gwenview csinálta, azzal forgattam be ezeket a képeket.
+  * https://server.rizsi.com/fotok/fotok/rizsi/mx5-crash/IMG_20160713_174724.jpg?size=original - java nem tudja processzálni: legyen fallback az imagemagickra
+  * https://server.rizsi.com/fotok/fotok/csalad/202008_Rab_Plitvice/VID_20200802_185012.mp4 - valamiért hwaccel-lel nem tudja kódolni: fallback to sw decode works
+  ** $ ffmpeg -vaapi_device /dev/dri/renderD128 -i /home/rizsi/tmp/fotok/images/VID_20200802_185012.mp4 -y -f mp4 -strict experimental -vf 'scale=w=320:h=180,format=nv12,hwupload' -c:v h264_vaapi -c:a copy /home/rizsi/tmp/fotok/thumbs/video/d0d4583fa7d2fc23eed95c0d7ee7ae4b.320.mp4
+  * https://server.rizsi.com/fotok/fotok/csalad/202008_Rab_Plitvice/VID_20200810_155110.mp4?size=original
+  * https://server.rizsi.com/fotok/fotok/csalad/202008_Rab_Plitvice/VID_20200810_153624.mp4?size=original
