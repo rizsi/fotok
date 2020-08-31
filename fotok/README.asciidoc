@@ -26,6 +26,16 @@ Required hearders:
  * LineageOs O+3T sourced video can not be converted on the server
  * loading... animáció
  
+ * UI to show offline status and disposed
+ * Direct link to image should not load the thumbs
+ * Logger should use the same channel for messages instead of separate queries
+ * ImageLoader should be used for each image - implement prioritization
+ * Video preview image should be set to the same image as thumb
+ * On interaction try to restart communication (indexedComm)
+ * Dispose timer: we need a keep alive ping-pong within the application domain!
+ * indexedComm: implement a queue length counter and memory limit in the server side.
+ 
+ 
 == TODO fixed
 
  * Konvertálási hibák:

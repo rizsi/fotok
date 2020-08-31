@@ -4,9 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONObject;
+
 import hu.qgears.images.SizeInt;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
-import hu.qgears.quickjs.qpage.IInMemoryPost;
 import hu.qgears.quickjs.qpage.QComponent;
 import hu.qgears.quickjs.qpage.QPage;
 
@@ -101,11 +102,6 @@ public class QThumb extends QComponent {
 			write("\t</div>\n</div>\t\n");
 		}
 	}
-	
-	@Override
-	public void handle(HtmlTemplate parent, IInMemoryPost post) throws IOException {
-		
-	}
 
 	public void scrollIntoView() {
 		setParent(page.getCurrentTemplate());
@@ -160,5 +156,11 @@ public class QThumb extends QComponent {
 	}
 	public SizeInt getOriginalSize() {
 		return originalSize;
+	}
+
+	@Override
+	public void handle(HtmlTemplate parent, JSONObject post) throws IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }

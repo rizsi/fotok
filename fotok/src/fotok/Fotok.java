@@ -26,6 +26,7 @@ import com.jspa.logging.Log4Init;
 import fotok.database.DatabaseAccess;
 import fotok.database.RDupesListenerClient;
 import hu.qgears.quickjs.qpage.QPageTypesRegistry;
+import hu.qgears.quickjs.qpage.example.QPageContext;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
 import hu.qgears.quickjs.utils.DispatchHandler;
 import hu.qgears.quickjs.utils.HttpSessionQPageManager;
@@ -47,6 +48,8 @@ public class Fotok extends AbstractHandler {
 	public static Args clargs;
 	FolderHandler fh;
 	public DatabaseAccess da=new DatabaseAccess();
+	public Server server;
+	public QPageContext qpc;
 	public static class Args
 	{
 		@JOHelp("Jetty http server host to bind to.")
@@ -104,15 +107,13 @@ public class Fotok extends AbstractHandler {
 		
 		startFilesProcessing();
 		
+		InetSocketAddress sa = new InetSocketAddress(clargs.host, clargs.port);
+		server = new Server(sa);
+		qpc=new QPageContext(server);
+
 		FotosStorage storage=new FotosStorage(clargs, clargs.images, clargs.thumbsFolder, da);
 		fh=new FolderHandler(this, storage);
 
-		// Map<String, Path> l=new TreeMap<>();
-		// l.put("fotok", clargs.images.toPath());
-		
-		InetSocketAddress sa = new InetSocketAddress(clargs.host, clargs.port);
-		Server server = new Server(sa);
-		
 		// Specify the Session ID Manager
 		DefaultSessionIdManager idmanager = new DefaultSessionIdManager(server, new SecureRandom());
 		server.setSessionIdManager(idmanager);
@@ -140,7 +141,7 @@ public class Fotok extends AbstractHandler {
 		h.addHandler(qScripts, new QPageJSHandler());
 		h.addHandler(fScripts, new FotosJSHandler());
 		h.addHandler(fImages, new SvgHandler());
-		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(Listing.class), clargs));
+		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(qpc, Listing.class), clargs));
 		h.addHandler("/public/access/", new PublicAccess(clargs, this));
 		h.addHandler("/","/debug", new DebugHttpPage().createHandler());
 		h.addHandler("/","/log-handler", new LogHandler());

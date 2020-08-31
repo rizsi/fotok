@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Request;
-import org.json.JSONObject;
 
 import fotok.Authenticator.Mode;
 import fotok.QThumb.LabelsGenerator;
@@ -56,9 +55,10 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		page.submitToUI(new Runnable() {
 			@Override
 			public void run() {
+				setParent(page.getCurrentTemplate());
 				refresh();
 				updateShares();
-				
+				installOfflineHandler();
 				if(file!=null&&thumbs!=null&&file.getName()!=null&&file!=folder)
 				{
 					// Back button take us to the folder - useful on handheld devices
@@ -69,6 +69,8 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					{
 						view(thumb, false);
 					}
+				}else
+				{
 				}
 				page.historyPopState.addListener(e->{
 					if(e.pathname.endsWith("/")&&viewer!=null)
@@ -86,6 +88,9 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 				});
 			}
 		});
+	}
+	private void installOfflineHandler() {
+		write("page.setShowStateCallback(function(state){\n\tconsole.info(\"Show state: \"+state);\n\tif(state==2)\n\t{\n\t\tdocument.getElementById(\"alert-offline\").classList.remove(\"hidden\");\n\t\tdocument.getElementById(\"alert-disposed\").classList.add(\"hidden\");\n\t}else if(state==3)\n\t{\n\t\tdocument.getElementById(\"alert-offline\").classList.add(\"hidden\");\n\t\tdocument.getElementById(\"alert-disposed\").classList.remove(\"hidden\");\n\t}else\n\t{\n\t\tdocument.getElementById(\"alert-offline\").classList.add(\"hidden\");\n\t\tdocument.getElementById(\"alert-disposed\").classList.add(\"hidden\");\n\t}\n});\n");
 	}
 	@Override
 	public void setRequest(Request baseRequest, HttpServletRequest request) {
@@ -277,6 +282,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 					write("\tpage.setEnableScroll(true);\n");
 				}
 			}.generate();
+			refresh();
 			t.scrollIntoView();
 			viewer=null;
 			return null;
@@ -293,7 +299,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			}.initialize(page, whole.getId());
 			viewerInstance=new QDiv(whole, "viewerInstance");
 			viewerInstance.getUserEvent().addListener(e->{
-				String swipe=new JSONObject(e).getString("swipe");
+				String swipe=e.getString("swipe");
 				if("left".equals(swipe))
 				{
 					stepTo(next, true);
@@ -462,7 +468,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		write("<title>");
 		writeHtml(getTitle());
 		write("</title>\n<script language=\"javascript\" type=\"text/javascript\">\n");
-		new ServerLoggerJs().generate(this, contextPath+"/log-handler");
+		new ServerLoggerJs().generateWs(this, "globalQPage.comm");
 		write("</script>\n<script type=\"text/javascript\" src=\"");
 		writeHtml(contextPath+Fotok.fScripts);
 		write("/ArrayView.js\"></script>\n<script type=\"text/javascript\" src=\"");
@@ -473,7 +479,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		additionalHeaders();
 		write("<script type=\"text/javascript\">\nglobalImageSerialLoad=new ImageSerialLoad(1);\nwindow.onload=function()\n{\n");
 		generateUploadInitializer();
-		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\n.thumb-area {\n\twidth:100%;\n\theight:100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\nimg.rotate-90\n{\n\ttransform: rotate(90deg);\n}\nimg.rotate-180\n{\n\ttransform: rotate(180deg);\n}\nimg.rotate-270\n{\n\ttransform: rotate(270deg);\n}\ndiv.center\n{\n\ttext-align: center;\n}\n.hidden\n{\n\tdisplay: none;\n}\n</style>\n");
+		write("\tvar av=new ArrayView2(document.getElementById(\"content\"));\n\tav.reorganize();\n\tglobalQPage.setNewDomParent(document.getElementById(\"content\"));\n\tdocument.body.id=\"documentBody\";\n};\n</script>\n<style>\nbody, html {\n    height: 100%;\n    margin: 0;\n    padding: 0;\n}\n.thumb-img {\n    max-width: 100%;\n    max-height: 100%;\n}\n.thumb-area {\n\twidth:100%;\n\theight:100%;\n}\nimg\n{\n\timage-orientation: from-image;\n}\nimg.center\n{\n\tdisplay: block;\n\tmargin-left: auto;\n\tmargin-right: auto;\n}\nimg.rotate-90\n{\n\ttransform: rotate(90deg);\n}\nimg.rotate-180\n{\n\ttransform: rotate(180deg);\n}\nimg.rotate-270\n{\n\ttransform: rotate(270deg);\n}\ndiv.center\n{\n\ttext-align: center;\n}\n.hidden\n{\n\tdisplay: none;\n}\n.fixed-top {\n  position: fixed;\n  top: 0;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n}\n</style>\n");
 	}
 	
 	abstract protected void additionalHeaders();
@@ -485,7 +491,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	@Override
 	final protected void writeBody() {
 		User user=User.get(page.getQPageManager());
-		write("<h1>");
+		write("<div id=\"alert-offline\" class=\"hidden fixed-top\" role=\"alert\">\n  Connection to server temporarily broken!\n</div>\n<div id=\"alert-disposed\" class=\"hidden fixed-top\" role=\"alert\">\n  Connection to server is closed. Try reloading the page!\n</div>\n\n<h1>");
 		writeHtml(getTitle());
 		write("</h1>\n\n");
 		if(user!=null)

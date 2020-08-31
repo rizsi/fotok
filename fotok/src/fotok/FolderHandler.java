@@ -32,8 +32,8 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	private FotosStorage storage;
 
 	public FolderHandler(Fotok fotok, FotosStorage storage) {
-		dQPage=new QPageHandler(this);
-		createFolderPage=new QPageHandler(CreateFolder.class);
+		dQPage=new QPageHandler(fotok.qpc, this);
+		createFolderPage=new QPageHandler(fotok.qpc, CreateFolder.class);
 		filesHandler = new ResourceHandler();
 //		MimeTypes mt=new MimeTypes();
 //		mt.addMimeMapping("MTS", "video/mts");
