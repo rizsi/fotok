@@ -50,6 +50,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 
 	@Override
 	final protected void initQPage(QPage page) {
+		page.setDisposeTimeout(1000l*60*60);
 		page.setScriptsAsSeparateFile(contextPath+Fotok.qScripts);
 		installEditModeButtons(page);
 		page.submitToUI(new Runnable() {
@@ -96,7 +97,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	public void setRequest(Request baseRequest, HttpServletRequest request) {
 		super.setRequest(baseRequest, request);
 		contextPath=UtilHttpContext.getContext(baseRequest);
-		System.out.println("Target: "+baseRequest.getPathInfo()+" cp: "+contextPath);
 		if("desc".equals(baseRequest.getParameter("order")))
 		{
 			descending=true;
@@ -114,7 +114,6 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 			for(int i=0;i<l.size();++i)
 			{
 				l.get(i).setDate(entries.get(i).date);
-				System.out.println(entries.get(i).date);
 			}
 			Collections.sort(l, new Comparator<FotosFile>() {
 				@Override

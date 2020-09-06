@@ -1,5 +1,7 @@
 package fotok;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Stack;
 
 import fotok.Authenticator.Mode;
@@ -8,15 +10,14 @@ import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilEventListener;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;
+import hu.qgears.quickjs.qpage.QFileUpload;
 import hu.qgears.quickjs.qpage.QLabel;
 import hu.qgears.quickjs.qpage.QPage;
 import hu.qgears.quickjs.qpage.QTextEditor;
-import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 
 public class FolderViewPageRW extends AbstractFolderViewPage {
 	QLabel shares;
-	QLabel processing;
-	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, FotosFile file, UploadHandlerDelegate delegate, ThumbsHandler thumbsHandler) {
+	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
 		super(mode, uploadFolder, file, thumbsHandler);
 		this.thumbsHandler=thumbsHandler;
 		if(mode!=Mode.rw)
@@ -27,54 +28,6 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 
 	@Override
 	protected void installEditModeButtons(QPage page) {
-	}
-	private Object processFolder() {
-		// TODO remove - processing is automatic now
-		processing.innerhtml.setPropertyFromServer("Finding all files...");
-		new Thread("Process folder")
-		{
-			public void run() {
-				int n=0;
-				for(@SuppressWarnings("unused") FotosFile f: folder.iterateFolderSubFotos())
-				{
-					n++;
-				}
-				int i=0;
-				int nn=n;
-				{
-					int ii=i;
-					page.submitToUI(new Runnable() {
-						@Override
-						public void run() {
-							processing.innerhtml.setPropertyFromServer("Processed: "+ii+"/"+nn);
-						}
-					});
-				}
-				ThumbsHandler th=new ThumbsHandler(thumbsHandler.fotok, folder.storage);
-				for(FotosFile f: folder.iterateFolderSubFotos())
-				{
-					for(ESize s: ESize.values())
-					{
-//						try {
-//							// th.createThumb(f, s);
-//						} catch (IOException e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						}
-					}
-					i++;
-					int ii=i;
-					page.submitToUI(new Runnable() {
-						@Override
-						public void run() {
-							processing.innerhtml.setPropertyFromServer("Processed: "+ii+"/"+nn);
-						}
-					});
-				}
-			};
-		}
-		.start();
-		return null;
 	}
 
 	private Object share() {
@@ -200,22 +153,28 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 
 	@Override
 	protected void additionalHeaders() {
-		write("<script type=\"text/javascript\" src=\"");
-		writeHtml(contextPath+Fotok.fScripts);
-		write("/upload.js\"></script>\n<script type=\"text/javascript\" src=\"");
-		writeHtml(contextPath+Fotok.fScripts);
-		write("/multiupload.js\"></script>\n<style>\n.dropping {\n  border: 5px solid blue;\n  width:  200px;\n  height: 100px;\n}\n</style>\n");
+		write("<style>\n.dropping {\n  border: 5px solid blue;\n  width:  200px;\n  height: 100px;\n}\n</style>\n");
 	}
 	
 	@Override
 	protected void generateUploadInitializer() {
-		write("\tvar upl=new MultiUpload(document.getElementById(\"uploadProgress\"), ");
-		writeObject(Fotok.clargs.getMaxChunkSize());
-		write(");\n\tupl.installDrop(document.body);\n\tupl.installFileInput(document.getElementById(\"file_input\"));\n\tupl.onFileFinished=function(){globalQPage.components[\"refresh\"].onclick();};\n");
 	}
-	
+	private long prevAt=0;
 	@Override
 	protected void generateBodyPartsEdit() {
+		QLabel uploadProgress=new QLabel(page, "uploadProgress");
+		QFileUpload fileUpload=new QFileUpload(page);
+		fileUpload.setOutputStreamCreator(fu->{
+			return new FileOutputStream(new File(folder.getFile(), fu.getFileName()));
+		});
+		fileUpload.statusUpdated.addListener(fu->{
+			if(fu.getAt()<prevAt||fu.getAt()==fu.getFileSize()||fu.getAt()>prevAt+100000)
+			{
+				prevAt=fu.getAt();
+				uploadProgress.innerhtml.setPropertyFromServer(""+fu.getFileName()+" "+fu.getAt()+"/"+fu.getFileSize());
+			}
+		});
+		fileUpload.installDropListener("document.body");
 		QButton refresh=new QButton(page, "refresh");
 		refresh.clicked.addListener(new UtilEventListener<QButton>() {
 			
@@ -224,38 +183,13 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 				refresh();
 			}
 		});
-		// TODO remove transcode option from UI
-		QButton transcode=new QButton(page, "button-transcode");
-		transcode.clicked.addListener(e->{
-			new Thread()
-			{
-				public void run()
-				{
-					ProgressCounter pc=new ProgressCounter(
-							new ProgressCounter.AbstractProgressCounterHost() {
-								@Override
-								public void progressStatusUpdate(Stack<ProgressCounterSubTask> tasks) {
-									String s=""+tasks;
-									page.submitToUI(()->{
-										processing.innerhtml.setPropertyFromServer(s);
-									});
-								}
-							}
-							, "transcode all videos in folder");
-					pc.setCurrent();
-				}
-			}
-			.start();
-		});
 		QButton newFolder=new QButton(page, "newFolder");
 		newFolder.clicked.addListener(x->newFolder());
 		QButton share=new QButton(page, "share");
 		share.clicked.addListener(c->share());
 		shares=new QLabel(page, "shares");
-		QButton processFolder=new QButton(page, "processFolder");
-		processFolder.clicked.addListener(x->processFolder());
-		processing=new QLabel(page, "processFolderProgress");
-		processing.innerhtml.setPropertyFromServer("");
-		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<input type=\"file\" id=\"file_input\" multiple><br/>\n<button id=\"share\">Share...</button>\n<button id=\"processFolder\">Process...</button><div id=\"processFolderProgress\"></div>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n<button id=\"button-transcode\">transcode videos</button>\n");
+		write("<button id=\"refresh\" style=\"display:none;\">Refresh</button>\n<button id=\"newFolder\">New folder...</button>\n<br/><br/><br/><br/>\n");
+		fileUpload.generateHtmlObject(this);
+		write("<br/><br/><br/><br/>\n<button id=\"share\">Share...</button>\n<div id=\"shares\"></div>\n<div id=\"uploadProgress\"></div>\n\n");
 	}
 }

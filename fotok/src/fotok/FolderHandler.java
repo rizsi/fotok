@@ -14,7 +14,6 @@ import fotok.Authenticator.Mode;
 import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.example.IQPageFactory;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
-import hu.qgears.quickjs.upload.UploadHandlerDelegate;
 import hu.qgears.quickjs.utils.AbstractQPage;
 
 /**
@@ -24,7 +23,6 @@ import hu.qgears.quickjs.utils.AbstractQPage;
  */
 public class FolderHandler extends HtmlTemplate implements IQPageFactory
 {
-	private UploadHandlerDelegate delegate=new UploadHandlerDelegate();
 	private QPageHandler dQPage;
 	private ResourceHandler filesHandler;
 	private QPageHandler createFolderPage;
@@ -81,11 +79,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 				}
 			} catch (Exception e) {
 			}
-			if(Mode.rw.equals(ff.mode)&&delegate.handle(ff.folder.getImagesFolder(), baseRequest, response, false))
-			{
-				// Upload delegate access in case of RW mode of folder
-				return;
-			} else if ("all".equals(baseRequest.getParameter("download")))
+			if ("all".equals(baseRequest.getParameter("download")))
 			{
 					System.out.println("Download all!");
 					new FolderAsZipHandler(ff.folder.getFile()).handle(target, baseRequest, request, response);
@@ -131,7 +125,7 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 		ResolvedQuery ff=(ResolvedQuery) request;
 		if(ff.mode==Mode.rw && ff.isEditModeAsked())
 		{
-			return new FolderViewPageRW(ff.mode, ff.folder, ff.file, delegate, thumbsHandler);
+			return new FolderViewPageRW(ff.mode, ff.folder, ff.file, thumbsHandler);
 		}else
 		{
 			return new FolderViewPageReadOnly(ff.mode, ff.folder, ff.file, thumbsHandler);

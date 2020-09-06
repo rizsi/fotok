@@ -3,7 +3,9 @@ package fotok.formathandler;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +14,7 @@ import fotok.ESize;
 import fotok.Fotok;
 import hu.qgears.commons.Pair;
 import hu.qgears.commons.UtilProcess;
+import hu.qgears.commons.UtilString;
 import hu.qgears.images.SizeInt;
 
 public class ImageProcessor extends CommandLineProcessor {
@@ -37,7 +40,7 @@ public class ImageProcessor extends CommandLineProcessor {
 						sizes.add(new Pair<File, SizeInt>(f, size));
 					}else
 					{
-						Files.copy(f.toPath(), f.toPath());
+						Files.copy(file.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					}
 				}
 				ExifParser.createResizedImages(file, sizes, d);
@@ -48,6 +51,10 @@ public class ImageProcessor extends CommandLineProcessor {
 		}
 		if(ret==null)
 		{
+			if(d==null)
+			{
+				d=new ExifData();
+			}
 			ProcessBuilder pb=new ProcessBuilder("exiftool", file.getAbsolutePath());
 			pb.redirectError(Redirect.INHERIT);
 			Process p=pb.start();
@@ -74,14 +81,17 @@ public class ImageProcessor extends CommandLineProcessor {
 							f.getAbsolutePath()).redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT);
 					p=pb.start();
 					try {
-						UtilProcess.getProcessReturnValueFuture(p).get(10, TimeUnit.SECONDS);
+						// Very huge images are converted in a longer time!
+						long timeoutSecs=d.width*d.height/1000000;
+						UtilProcess.getProcessReturnValueFuture(p).get(Math.max(3, timeoutSecs), TimeUnit.SECONDS);
 					} catch (Exception e1) {
+						System.err.println("Command was: "+UtilString.concat(pb.command(), " "));
 						p.destroy();
 						throw new RuntimeException(e1);
 					}
 				}else
 				{
-					Files.copy(f.toPath(), f.toPath());
+					Files.copy(file.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				}
 			}
 			ret=new ExifData();

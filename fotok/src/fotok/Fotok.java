@@ -103,6 +103,7 @@ public class Fotok extends AbstractHandler {
 	}
 	private void run() throws Exception
 	{
+		org.slf4j.LoggerFactory.getLogger( getClass() );
 		Log4Init.init();
 		
 		startFilesProcessing();

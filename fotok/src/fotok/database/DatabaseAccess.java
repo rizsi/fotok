@@ -1,11 +1,8 @@
 package fotok.database;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 import org.sqlite.JDBC;
@@ -21,7 +18,6 @@ import fotok.formathandler.ExiftoolProcessor;
 import fotok.formathandler.FilesProcessor;
 import fotok.formathandler.FormatHandler;
 import hu.qgears.images.SizeInt;
-import rdupes.RDupes;
 import rdupes.RDupesFile;
 
 public class DatabaseAccess {
@@ -32,25 +28,6 @@ public class DatabaseAccess {
 	public final FilesProcessor fp=new FilesProcessor(this);
 	private PublicAccessManager publicAccessManager;
 
-	public static void main(String[] args) throws Exception {
-		Path p=new File("/home/rizsi/tmp/fotok/images").toPath();
-		Fotok.clargs.sqlFile=new File("/home/rizsi/tmp/fotok/db.sqlite");
-		List<Path> initialPath=new ArrayList<>();
-		initialPath.add(p);
-		DatabaseAccess da=new DatabaseAccess();
-		try
-		{
-			da.start();
-			new RDupes().setClient(new RDupesListenerClient(da)).start(1, initialPath);
-			while(true)
-			{
-				Thread.sleep(1000);
-			}
-		}finally
-		{
-			da.close();
-		}
-	}
 	public PublicAccessManager getPublicAccessManager() {
 		synchronized (this) {
 			if(publicAccessManager==null)
