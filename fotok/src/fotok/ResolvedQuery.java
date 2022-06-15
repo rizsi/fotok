@@ -7,6 +7,8 @@ public class ResolvedQuery {
 	public String subPath;
 	public FotosFile file;
 	public Mode mode;
+	/** True in case this is a public access. Hides features on the page. */
+	public boolean publicAccess;
 	public boolean editModeAsked;
 	public ResolvedQuery(FotosFolder folder, FotosFile file, String subPath) {
 		super();

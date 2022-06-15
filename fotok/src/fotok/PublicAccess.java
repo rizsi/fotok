@@ -49,6 +49,7 @@ public class PublicAccess extends AbstractHandler {
 				try
 				{
 					Authenticator.setAccessMode(baseRequest, Mode.ro);
+					Authenticator.setPublicAccessMode(baseRequest);
 					fotok.handle(rewrittenpath, baseRequest, request, response);
 				}finally
 				{

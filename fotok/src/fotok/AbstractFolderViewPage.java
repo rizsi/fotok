@@ -29,6 +29,7 @@ import hu.qgears.quickjs.utils.ServerLoggerJs;
 import hu.qgears.quickjs.utils.UtilHttpContext;
 
 abstract public class AbstractFolderViewPage extends AbstractQPage {
+	protected ResolvedQuery query;
 	protected FotosFolder folder;
 	protected Map<String, QThumb>thumbs=new TreeMap<>();
 	protected Mode mode;
@@ -41,7 +42,8 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 	ThumbsHandler thumbsHandler;
 	private int index=0;
 	private boolean descending;
-	public AbstractFolderViewPage(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
+	public AbstractFolderViewPage(ResolvedQuery query, Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
+		this.query=query;
 		this.mode=mode;
 		this.folder=uploadFolder;
 		this.thumbsHandler=thumbsHandler;
@@ -493,7 +495,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		write("<div id=\"alert-offline\" class=\"hidden fixed-top\" role=\"alert\">\n  Connection to server temporarily broken!\n</div>\n<div id=\"alert-disposed\" class=\"hidden fixed-top\" role=\"alert\">\n  Connection to server is closed. Try reloading the page!\n</div>\n\n<h1>");
 		writeHtml(getTitle());
 		write("</h1>\n\n");
-		if(user!=null)
+		if(user!=null && !query.publicAccess)
 		{
 			write("<a href=\"");
 			writeHtml(contextPath);
@@ -506,7 +508,7 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		{
 			write("<a href=\".\">leave edit mode</a><br/><br/><br/><br/>\n");
 		}
-		if(!folder.isRoot())
+		if(!folder.isRoot() && !query.publicAccess)
 		{
 			write("<a href=\"..\">Parent folder</a>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n\n");
 		}

@@ -128,10 +128,10 @@ public class FolderHandler extends HandlerCollection implements IQPageFactory
 		ResolvedQuery ff=(ResolvedQuery) request;
 		if(ff.mode==Mode.rw && ff.isEditModeAsked())
 		{
-			return new FolderViewPageRW(ff.mode, ff.folder, ff.file, thumbsHandler);
+			return new FolderViewPageRW(ff, ff.mode, ff.folder, ff.file, thumbsHandler);
 		}else
 		{
-			return new FolderViewPageReadOnly(ff.mode, ff.folder, ff.file, thumbsHandler);
+			return new FolderViewPageReadOnly(ff, ff.mode, ff.folder, ff.file, thumbsHandler);
 		}
 	}
 }

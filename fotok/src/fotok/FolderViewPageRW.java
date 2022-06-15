@@ -14,8 +14,8 @@ import hu.qgears.quickjs.qpage.QTextEditor;
 
 public class FolderViewPageRW extends AbstractFolderViewPage {
 	QLabel shares;
-	public FolderViewPageRW(Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
-		super(mode, uploadFolder, file, thumbsHandler);
+	public FolderViewPageRW(ResolvedQuery query, Mode mode, FotosFolder uploadFolder, FotosFile file, ThumbsHandler thumbsHandler) {
+		super(query, mode, uploadFolder, file, thumbsHandler);
 		this.thumbsHandler=thumbsHandler;
 		if(mode!=Mode.rw)
 		{

@@ -218,6 +218,15 @@ public class Authenticator extends HandlerCollection {
 	{
 		return (Mode)req.getAttribute("accessMode");
 	}
+	public static void setPublicAccessMode(Request baseRequest) {
+		baseRequest.setAttribute("publicAccess", true);
+	}
+	public static boolean getPublicAccessMode(Request req)
+	{
+		Object ret=req.getAttribute("publicAccess");
+		return ret!=null?(boolean) ret: false;
+	}
+
 
 	private Mode getMode(User user, String target) {
 		Mode ret=null;
@@ -253,5 +262,4 @@ public class Authenticator extends HandlerCollection {
 		}
 		return paths;
 	}
-
 }

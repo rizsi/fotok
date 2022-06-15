@@ -47,6 +47,10 @@ public class FotosStorage {
 		{
 			ret.editModeAsked=true;
 		}
+		if(Authenticator.getPublicAccessMode(baseRequest))
+		{
+			ret.publicAccess=true;
+		}
 		return ret;
 	}
 }
