@@ -30,7 +30,6 @@ import hu.qgears.quickjs.qpage.example.QPageContext;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
 import hu.qgears.quickjs.utils.DispatchHandler;
 import hu.qgears.quickjs.utils.HttpSessionQPageManager;
-import hu.qgears.quickjs.utils.QPageHandlerToJetty;
 import hu.qgears.quickjs.utils.QPageJSHandler;
 import joptsimple.annot.AnnotatedClass;
 import joptsimple.annot.JOHelp;
@@ -41,7 +40,7 @@ import rdupes.RDupes;
  * Executable main class that opens a Jetty web server and handles QPage based
  * web applications within it.
  */
-public class Fotok extends AbstractHandler {
+public class Fotok {
 	public static String qScripts="/public/QPage";
 	public static String fScripts="/public/js";
 	public static String fImages="/public/image";
@@ -138,11 +137,12 @@ public class Fotok extends AbstractHandler {
 
 		QPageTypesRegistry.getInstance().registerType(new QThumb(null, null, null, null, null, null, null));
 		DispatchHandler h=new DispatchHandler();
-		h.addHandler("/fotok/", this);
+		h.setContextToSetup(qpc);
+		h.addHandler("/fotok/", fh);
 		h.addHandler(qScripts, new QPageJSHandler());
 		h.addHandler(fScripts, new FotosJSHandler());
 		h.addHandler(fImages, new SvgHandler());
-		h.addHandler("", "/", new QPageHandlerToJetty(new QPageHandler(qpc, Listing.class), clargs));
+		h.addHandler("", "/", new QPageHandler(Listing.class).setUserParameterGetter(r->clargs));
 		h.addHandler("/public/access/", new PublicAccess(clargs, this));
 		h.addHandler("/","/debug", new DebugHttpPage().createHandler());
 		h.addHandler("/","/log-handler", new LogHandler());
@@ -162,9 +162,7 @@ public class Fotok extends AbstractHandler {
 		l.add(clargs.images.toPath());
 		new RDupes().setClient(new RDupesListenerClient(da)).start(1, l);
 	}
-
-	@Override
-	public void handle(String target, final Request baseRequest, HttpServletRequest request,
+	protected void handle(String target, final Request baseRequest, HttpServletRequest request,
 			final HttpServletResponse response) throws IOException, ServletException {
 		fh.handle(target, baseRequest, request, response);
 	}

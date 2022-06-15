@@ -7,6 +7,8 @@ import java.util.Properties;
 
 import org.sqlite.JDBC;
 
+import com.jspa.commons.sql.ESQLImpl;
+import com.jspa.commons.sql.ExtendedConnection;
 import com.jspa.commons.sql.MultiSQLTemplate;
 import com.jspa.commons.sql.SQLTemplate;
 
@@ -24,7 +26,7 @@ public class DatabaseAccess {
 	public static final String IGNORE_FILE_NAME = ".rdupesignore";
 
 	public int maxPathLength=256;
-	private Connection conn;
+	private ExtendedConnection conn;
 	public final FilesProcessor fp=new FilesProcessor(this);
 	private PublicAccessManager publicAccessManager;
 
@@ -45,9 +47,10 @@ public class DatabaseAccess {
 	public void start() throws SQLException
 	{
 		Properties props=new Properties();
-		conn=JDBC.createConnection("jdbc:sqlite:"+Fotok.clargs.sqlFile.getAbsolutePath(), props);
+		Connection jdbcConn=JDBC.createConnection("jdbc:sqlite:"+Fotok.clargs.sqlFile.getAbsolutePath(), props);
+		conn=new ExtendedConnection(jdbcConn, ESQLImpl.sqlite, "", "");
 		new CreateTables(this).execute(conn);
-		conn.setAutoCommit(false);
+		jdbcConn.setAutoCommit(false);
 		String version=commit(new GetProperty("version")).value;
 		if(version==null)
 		{

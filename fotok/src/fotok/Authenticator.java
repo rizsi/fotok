@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ import hu.qgears.quickjs.qpage.QPageManager;
 import hu.qgears.quickjs.utils.HttpSessionQPageManager;
 import hu.qgears.quickjs.utils.UtilHttpContext;
 
-public class Authenticator extends AbstractHandler {
+public class Authenticator extends HandlerCollection {
 	AbstractHandler delegate;
 	Args clargs;
 	String prevContent;
@@ -62,6 +63,7 @@ public class Authenticator extends AbstractHandler {
 		this.fotok=fotok;
 		this.delegate=delegate;
 		this.clargs = clargs;
+		addHandler(delegate);
 		if(clargs.demoAllPublic)
 		{
 			return;

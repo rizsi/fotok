@@ -2,11 +2,8 @@ package fotok;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Stack;
 
 import fotok.Authenticator.Mode;
-import hu.qgears.commons.ProgressCounter;
-import hu.qgears.commons.ProgressCounterSubTask;
 import hu.qgears.commons.UtilEventListener;
 import hu.qgears.quickjs.qpage.QButton;
 import hu.qgears.quickjs.qpage.QDiv;

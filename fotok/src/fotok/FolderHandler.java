@@ -7,11 +7,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.resource.Resource;
 
 import fotok.Authenticator.Mode;
-import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.example.IQPageFactory;
 import hu.qgears.quickjs.qpage.example.QPageHandler;
 import hu.qgears.quickjs.utils.AbstractQPage;
@@ -21,7 +21,7 @@ import hu.qgears.quickjs.utils.AbstractQPage;
  * serves the resources (raw image, video files, processed resized thumbnails) themselves
  * through delegated handler.
  */
-public class FolderHandler extends HtmlTemplate implements IQPageFactory
+public class FolderHandler extends HandlerCollection implements IQPageFactory
 {
 	private QPageHandler dQPage;
 	private ResourceHandler filesHandler;
@@ -30,8 +30,9 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 	private FotosStorage storage;
 
 	public FolderHandler(Fotok fotok, FotosStorage storage) {
-		dQPage=new QPageHandler(fotok.qpc, this);
-		createFolderPage=new QPageHandler(fotok.qpc, CreateFolder.class);
+		dQPage=new QPageHandler(this);
+		addHandler(dQPage);
+		createFolderPage=new QPageHandler(CreateFolder.class);
 		filesHandler = new ResourceHandler();
 //		MimeTypes mt=new MimeTypes();
 //		mt.addMimeMapping("MTS", "video/mts");
@@ -105,12 +106,14 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 			{
 				if(ff.folder.exists())
 				{
-					dQPage.handle(ff.subPath, baseRequest, request, response, ff);
+					QPageHandler.setUserParameter(request, ff);
+					dQPage.handle(ff.subPath, baseRequest, request, response);
 				}else
 				{
 					if(ff.mode==Mode.rw)
 					{
-						createFolderPage.handle(ff.subPath, baseRequest, request, response, ff);
+						QPageHandler.setUserParameter(request, ff);
+						createFolderPage.handle(ff.subPath, baseRequest, request, response);
 					}
 				}
 			}
@@ -131,5 +134,4 @@ public class FolderHandler extends HtmlTemplate implements IQPageFactory
 			return new FolderViewPageReadOnly(ff.mode, ff.folder, ff.file, thumbsHandler);
 		}
 	}
-
 }
