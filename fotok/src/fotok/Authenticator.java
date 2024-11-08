@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import fotok.Fotok.Args;
+import hu.qgears.commons.SafeTimerTask;
 import hu.qgears.commons.UtilFile;
 import hu.qgears.commons.UtilString;
 import hu.qgears.quickjs.qpage.QPageManager;
@@ -70,10 +70,10 @@ public class Authenticator extends HandlerCollection {
 		}
 		reloadConfig();
 		Timer t = new Timer(true);
-		t.schedule(new TimerTask() {
+		t.schedule(new SafeTimerTask() {
 
 			@Override
-			public void run() {
+			public void doRun() {
 				reloadConfig();
 			}
 		}, 10000, 10000);

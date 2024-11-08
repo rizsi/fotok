@@ -11,6 +11,9 @@ import hu.qgears.quickjs.qpage.HtmlTemplate;
 import hu.qgears.quickjs.qpage.QComponent;
 import hu.qgears.quickjs.qpage.QPage;
 
+/**
+ * Thumbnail of file on the listing page
+ */
 public class QThumb extends QComponent {
 	public interface LabelsGenerator
 	{

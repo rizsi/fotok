@@ -55,7 +55,7 @@ public class ImageProcessor extends CommandLineProcessor {
 			{
 				d=new ExifData();
 			}
-			ProcessBuilder pb=new ProcessBuilder("exiftool", file.getAbsolutePath());
+			ProcessBuilder pb=ExiftoolProcessor.createCommand(file);
 			pb.redirectError(Redirect.INHERIT);
 			Process p=pb.start();
 			ExiftoolProcessor etp=new ExiftoolProcessor();

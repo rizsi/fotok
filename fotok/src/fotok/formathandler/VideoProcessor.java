@@ -132,19 +132,31 @@ public class VideoProcessor extends CommandLineProcessor
 			ProcessBuilder pb=new ProcessBuilder("ffprobe", source.getAbsolutePath());
 			pb.redirectOutput(Redirect.INHERIT);
 			Process p=pb.start();
-			probe=new FFprobeProcessor();
-			// TODO whatif no input
-			processLines(p.getErrorStream(), probe);
-			waitProperExit(p, 10);
+			try
+			{
+				probe=new FFprobeProcessor();
+				// TODO whatif no input
+				processLines(p.getErrorStream(), probe);
+				waitProperExit(p, 10);
+			}finally
+			{
+				p.destroy();
+			}
 		}
 		{
-			ProcessBuilder pb=new ProcessBuilder("exiftool", source.getAbsolutePath());
+			ProcessBuilder pb=ExiftoolProcessor.createCommand(source);
 			pb.redirectError(Redirect.INHERIT);
 			Process p=pb.start();
-			exifTool=new ExiftoolProcessor();
-			// TODO whatif no input
-			processLines(p.getInputStream(), exifTool);
-			waitProperExit(p, 10);
+			try
+			{
+				exifTool=new ExiftoolProcessor();
+				// TODO whatif no input
+				processLines(p.getInputStream(), exifTool);
+				waitProperExit(p, 10);
+			}finally
+			{
+				p.destroy();
+			}
 		}
 		System.out.println("Duration: "+probe.durationDecades);
 		System.out.println("Data: "+probe.codec+" "+probe.width+" "+probe.height);

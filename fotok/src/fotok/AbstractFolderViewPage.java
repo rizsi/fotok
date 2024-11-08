@@ -1,6 +1,7 @@
 package fotok;
 
 import java.io.Writer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,6 +30,7 @@ import hu.qgears.quickjs.utils.ServerLoggerJs;
 import hu.qgears.quickjs.utils.UtilHttpContext;
 
 abstract public class AbstractFolderViewPage extends AbstractQPage {
+	public SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
 	protected ResolvedQuery query;
 	protected FotosFolder folder;
 	protected Map<String, QThumb>thumbs=new TreeMap<>();
@@ -507,6 +509,11 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		if(this instanceof FolderViewPageRW)
 		{
 			write("<a href=\".\">leave edit mode</a><br/><br/><br/><br/>\n");
+			QButton b=new QButton(page);
+			write("<button id=\"");
+			writeObject(b.getId());
+			write("\">reindex folder</button>\n");
+			b.clicked.addListener(e->reindexFolder(folder));
 		}
 		if(!folder.isRoot() && !query.publicAccess)
 		{
@@ -523,9 +530,13 @@ abstract public class AbstractFolderViewPage extends AbstractQPage {
 		if(mode==Mode.rw)
 		{
 			write("<a href=\"?edit=true\">Edit mode</a>\n");
-			
 		}
 		write("</div>\n<br/>\n<br/>\n<br/>\n<br/>\n<br/>\n");
+	}
+
+	protected void reindexFolder(FotosFolder f)
+	{
+		// TODO reindex folder!!!
 	}
 
 	/**

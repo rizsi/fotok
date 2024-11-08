@@ -1,5 +1,6 @@
 package fotok.formathandler;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,7 +23,7 @@ public class ExiftoolProcessor implements Consumer<String>
 	@Override
 	public void accept(String l) {
 		String t=l.trim();
-		Pair<String, String> keyValue=parseLine(l);
+		Pair<String, String> keyValue=parseLine(t);
 		if(keyValue!=null)
 		{
 			switch (keyValue.getA()) {
@@ -84,5 +85,11 @@ public class ExiftoolProcessor implements Consumer<String>
 	@Override
 	public String toString() {
 		return "Mime: "+mimeType+" Date: "+date;
+	}
+	public static ProcessBuilder createCommand(File file) {
+		// -api quicktimeutc - video time stamp is assumed to be UTC time zone as specification.
+		// Without this timestamp of video files are off by timezone on my computer
+		ProcessBuilder pb=new ProcessBuilder("exiftool", "-api", "quicktimeutc", file.getAbsolutePath());
+		return pb;
 	}
 }

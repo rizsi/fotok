@@ -37,6 +37,7 @@ public class GetProcessedEntryByPath extends MultiSQLTemplate
 				width=rs.getInt(3);
 				height=rs.getInt(4);
 				date=rs.getLong(5);
+				// System.out.println("Date: "+date);
 			}
 		});
 	}

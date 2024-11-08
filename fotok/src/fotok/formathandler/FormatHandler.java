@@ -31,7 +31,7 @@ public class FormatHandler extends CommandLineProcessor
 			// ioex.printStackTrace();
 			// Ignore - file may not be an image...
 		}
-		ProcessBuilder pb=new ProcessBuilder("exiftool", file.getAbsolutePath());
+		ProcessBuilder pb=ExiftoolProcessor.createCommand(file);
 		pb.redirectError(Redirect.INHERIT);
 		Process p=pb.start();
 		ExiftoolProcessor etp=new ExiftoolProcessor();

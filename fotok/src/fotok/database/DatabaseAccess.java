@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.JDBC;
 
 import com.jspa.commons.sql.ESQLImpl;
@@ -29,6 +31,7 @@ public class DatabaseAccess {
 	private ExtendedConnection conn;
 	public final FilesProcessor fp=new FilesProcessor(this);
 	private PublicAccessManager publicAccessManager;
+	private static Logger log=LoggerFactory.getLogger(DatabaseAccess.class);
 
 	public PublicAccessManager getPublicAccessManager() {
 		synchronized (this) {
@@ -89,14 +92,12 @@ public class DatabaseAccess {
 				return;
 			}
 		} catch (SQLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			log.error("Get existing entry: "+ff.getFullName(),e1);
 		}
 		try {
 			new FormatHandler(this, ff.file.toFile(), hash).run();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error("Error processing file: "+ff.getFullName(),e);
 		}
 	}
 	/**

@@ -1,5 +1,7 @@
 package fotok;
 
+import java.util.Date;
+
 import fotok.Authenticator.Mode;
 import hu.qgears.quickjs.qpage.QPage;
 
@@ -20,6 +22,9 @@ public class FolderViewPageReadOnly extends AbstractFolderViewPage {
 	protected void generateThumbLabels(FotosFile f, QThumb t) {
 		write("<div class=\"center\">");
 		writeHtml(f.getName());
+		write("</div>\n");
+		write("<div class=\"center\">");
+		writeHtml(sdf.format(new Date(f.getDate())));
 		write("</div>\n");
 	}
 

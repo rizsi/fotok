@@ -1,7 +1,6 @@
 package fotok;
 
 import java.io.File;
-import java.io.FileOutputStream;
 
 import fotok.Authenticator.Mode;
 import hu.qgears.commons.UtilEventListener;
@@ -162,13 +161,20 @@ public class FolderViewPageRW extends AbstractFolderViewPage {
 		QLabel uploadProgress=new QLabel(page, "uploadProgress");
 		QFileUpload fileUpload=new QFileUpload(page);
 		fileUpload.setOutputStreamCreator(fu->{
-			return new FileOutputStream(new File(folder.getFile(), fu.getFileName()));
+			File f=new File(folder.getFile(), fu.getFileName());
+			return UploadFileOutputStream.create(f);
+		});
+		fileUpload.setFolderCreator((fu, folderName)->{
+			new File(folder.getFile(), folderName).mkdirs();
 		});
 		fileUpload.statusUpdated.addListener(fu->{
 			if(fu.getAt()<prevAt||fu.getAt()==fu.getFileSize()||fu.getAt()>prevAt+100000)
 			{
 				prevAt=fu.getAt();
-				uploadProgress.innerhtml.setPropertyFromServer(""+fu.getFileName()+" "+fu.getAt()+"/"+fu.getFileSize());
+				uploadProgress.innerhtml.setPropertyFromServer("Upload: "+
+				String.format("%.2f",((double)fu.getAllReceived()/fu.getAllEnqueued()*100))+"% "+
+				fu.getAllReceived()+"/"+fu.getAllEnqueued()+" current file: "+
+				fu.getFileName()+" "+fu.getAt()+"/"+fu.getFileSize());
 			}
 		});
 		fileUpload.installDropListener("document.body");
